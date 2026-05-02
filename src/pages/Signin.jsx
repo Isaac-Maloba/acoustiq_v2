@@ -4,17 +4,18 @@ import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { apiSignin } from '../utils/api';
 import Loader from '../components/Loader';
+import { GoogleLogin } from '@react-oauth/google';
 import '../css/Auth.css';
 
 const Signin = () => {
-    const { login }  = useAuth();
-    const navigate   = useNavigate();
+    const { login } = useAuth();
+    const navigate = useNavigate();
 
-    const [email,       setEmail]       = useState('');
-    const [password,    setPassword]    = useState('');
-    const [showPass,    setShowPass]    = useState(false);
-    const [loading,     setLoading]     = useState(false);
-    const [error,       setError]       = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPass, setShowPass] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -23,7 +24,7 @@ const Signin = () => {
 
         try {
             const formData = new FormData();
-            formData.append('email',    email);
+            formData.append('email', email);
             formData.append('password', password);
 
             const response = await apiSignin(formData);
@@ -39,6 +40,32 @@ const Signin = () => {
                 err.response?.data?.message ||
                 'Something went wrong. Please try again.'
             );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setLoading(true);
+        setError('');
+        try {
+            const formData = new FormData();
+            formData.append('credential', credentialResponse.credential);
+
+            const res = await fetch('https://maloba.alwaysdata.net/api/auth/google', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (res.ok && data.user) {
+                login(data.user);
+                navigate('/');
+            } else {
+                setError(data.message || 'Google Sign-In failed.');
+            }
+        } catch (err) {
+            setError('Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -108,6 +135,20 @@ const Signin = () => {
                     </button>
 
                 </form>
+
+                {/* ── DIVIDER ── */}
+                <div className="auth-divider">
+                    <span>or</span>
+                </div>
+
+                {/* ── GOOGLE ── */}
+                <div className="google-btn-wrapper">
+                    <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => setError('Google Sign-In failed. Please try again.')}
+                        width="100%"
+                    />
+                </div>
 
                 {/* ── FOOTER ── */}
                 <div className="auth-footer">

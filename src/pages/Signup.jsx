@@ -3,10 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiUser, FiMail, FiLock, FiPhone, FiEye, FiEyeOff } from 'react-icons/fi';
 import { apiSignup } from '../utils/api';
 import Loader from '../components/Loader';
+import { GoogleLogin } from '@react-oauth/google';
+import { useAuth } from '../context/AuthContext';
 import '../css/Auth.css';
 
 const Signup = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const [firstName,   setFirstName]   = useState('');
     const [lastName,    setLastName]    = useState('');
@@ -25,17 +28,14 @@ const Signup = () => {
         setError('');
         setSuccess('');
 
-        // Client-side validation
         if (password !== confirmPass) {
             setError('Passwords do not match.');
             return;
         }
-
         if (password.length < 6) {
             setError('Password must be at least 6 characters.');
             return;
         }
-
         if (phone.length < 10) {
             setError('Please enter a valid phone number.');
             return;
@@ -54,7 +54,6 @@ const Signup = () => {
             const response = await apiSignup(formData);
             setSuccess(response.data.message);
 
-            // Clear form
             setFirstName('');
             setLastName('');
             setEmail('');
@@ -62,7 +61,6 @@ const Signup = () => {
             setPassword('');
             setConfirmPass('');
 
-            // Redirect to signin after 2 seconds
             setTimeout(() => navigate('/signin'), 2000);
 
         } catch (err) {
@@ -70,6 +68,32 @@ const Signup = () => {
                 err.response?.data?.message ||
                 'Something went wrong. Please try again.'
             );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setLoading(true);
+        setError('');
+        try {
+            const formData = new FormData();
+            formData.append('credential', credentialResponse.credential);
+
+            const res = await fetch('https://maloba.alwaysdata.net/api/auth/google', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (res.ok && data.user) {
+                login(data.user);
+                navigate('/');
+            } else {
+                setError(data.message || 'Google Sign-In failed.');
+            }
+        } catch (err) {
+            setError('Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -93,7 +117,6 @@ const Signup = () => {
                 {/* ── FORM ── */}
                 <form onSubmit={handleSubmit} className="auth-form">
 
-                    {/* Name row */}
                     <div className="name-row">
                         <div className="form-group">
                             <label className="form-label">First Name</label>
@@ -126,7 +149,6 @@ const Signup = () => {
                         </div>
                     </div>
 
-                    {/* Email */}
                     <div className="form-group">
                         <label className="form-label">Email Address</label>
                         <div className="input-wrapper">
@@ -142,7 +164,6 @@ const Signup = () => {
                         </div>
                     </div>
 
-                    {/* Phone */}
                     <div className="form-group">
                         <label className="form-label">Phone Number</label>
                         <div className="input-wrapper">
@@ -158,7 +179,6 @@ const Signup = () => {
                         </div>
                     </div>
 
-                    {/* Password */}
                     <div className="form-group">
                         <label className="form-label">Password</label>
                         <div className="input-wrapper">
@@ -181,7 +201,6 @@ const Signup = () => {
                         </div>
                     </div>
 
-                    {/* Confirm Password */}
                     <div className="form-group">
                         <label className="form-label">Confirm Password</label>
                         <div className="input-wrapper">
@@ -214,6 +233,20 @@ const Signup = () => {
                     </button>
 
                 </form>
+
+                {/* ── DIVIDER ── */}
+                <div className="auth-divider">
+                    <span>or</span>
+                </div>
+
+                {/* ── GOOGLE ── */}
+                <div className="google-btn-wrapper">
+                    <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => setError('Google Sign-In failed. Please try again.')}
+                        width="100%"
+                    />
+                </div>
 
                 {/* ── FOOTER ── */}
                 <div className="auth-footer">
