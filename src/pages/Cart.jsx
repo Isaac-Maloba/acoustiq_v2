@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { FiTrash2, FiShoppingCart, FiMinus, FiPlus } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { apiMpesaPayment, apiAddToCart, apiDecrementCartItem } from '../utils/api';
+import { apiMpesaPayment } from '../utils/api';
 import Loader from '../components/Loader';
 import '../css/Cart.css';
 
 const Cart = () => {
-    const { user }                                 = useAuth();
-    const { cartItems, cartTotal, cartLoading,
-            removeFromCart, clearCart, fetchCart } = useCart();
-    const navigate                                 = useNavigate();
+    const { user }                                        = useAuth();
+    const { cartItems, cartTotal, cartLoading, getFinalPrice,
+            removeFromCart, decrementCartItem,
+            clearCart, fetchCart, addToCart }             = useCart();
+    const navigate                                        = useNavigate();
 
     const [phone,   setPhone]   = useState('');
     const [paying,  setPaying]  = useState(false);
@@ -36,11 +37,7 @@ const Cart = () => {
     const handleIncrease = async (productId, cartId) => {
         setBusyId(cartId);
         try {
-            const formData = new FormData();
-            formData.append('user_id',    user.user_id);
-            formData.append('product_id', productId);
-            await apiAddToCart(formData);
-            await fetchCart();
+            await addToCart(productId);
         } catch (err) {
             console.error('Failed to increase quantity:', err);
         } finally {
@@ -53,11 +50,9 @@ const Cart = () => {
         setBusyId(cartId);
         try {
             if (currentQty <= 1) {
-                // Remove the row entirely
                 await removeFromCart(cartId);
             } else {
-                await apiDecrementCartItem(cartId);
-                await fetchCart();
+                await decrementCartItem(cartId);
             }
         } catch (err) {
             console.error('Failed to decrease quantity:', err);
@@ -82,11 +77,11 @@ const Cart = () => {
         setPayMsg('');
         try {
             const formData = new FormData();
-            formData.append('phone',  phone);
-            formData.append('amount', Math.round(cartTotal));
+            formData.append('user_id', user.user_id);
+            formData.append('phone',   phone);
+            formData.append('amount',  Math.round(cartTotal));
             await apiMpesaPayment(formData);
-            setPayMsg('Payment initiated! Complete it on your phone. Your cart will be cleared once done.');
-            await clearCart();
+            setPayMsg('Payment initiated! Check your phone to complete the M-Pesa prompt. Your cart will clear once confirmed.');
             setPhone('');
         } catch (err) {
             setPayErr(err.response?.data?.message || 'Payment failed. Please try again.');
@@ -122,83 +117,100 @@ const Cart = () => {
 
                         {/* ── CART ITEMS ── */}
                         <div className="cart-items">
-                            {cartItems.map(item => (
-                                <div key={item.cart_id} className="cart-item">
+                            {cartItems.map(item => {
+                                const finalPrice = getFinalPrice(item);
+                                const hasDiscount = Number(item.discount_percent) > 0;
 
-                                    {/* Image */}
-                                    <div
-                                        className="cart-item-img"
-                                        onClick={() => navigate(`/product/${item.product_id}`)}
-                                    >
-                                        <img
-                                            src={`https://maloba.alwaysdata.net/static/images/${item.product_photo}`}
-                                            alt={item.product_name}
-                                            onError={(e) => { e.target.src = '/placeholder.png'; }}
-                                        />
-                                    </div>
+                                return (
+                                    <div key={item.cart_id} className="cart-item">
 
-                                    {/* Info */}
-                                    <div className="cart-item-info">
-                                        <h3
-                                            className="cart-item-name"
+                                        {/* Image */}
+                                        <div
+                                            className="cart-item-img"
                                             onClick={() => navigate(`/product/${item.product_id}`)}
                                         >
-                                            {item.product_name}
-                                        </h3>
-                                        <div className="cart-item-price">
-                                            KES {Number(item.product_cost).toLocaleString()}
+                                            <img
+                                                src={`https://maloba.alwaysdata.net/static/images/${item.product_photo}`}
+                                                alt={item.product_name}
+                                                onError={(e) => { e.target.src = '/placeholder.png'; }}
+                                            />
                                         </div>
 
-                                        {/* ── QTY CONTROLS ── */}
-                                        <div className="cart-qty-row">
-                                            <div className="cart-qty-controls">
-                                                <button
-                                                    className="qty-btn"
-                                                    onClick={() => handleDecrease(item.cart_id, item.quantity)}
-                                                    disabled={busyId === item.cart_id}
-                                                    title={item.quantity === 1 ? 'Remove item' : 'Decrease quantity'}
-                                                >
-                                                    {item.quantity === 1
-                                                        ? <FiTrash2 size={13} />
-                                                        : <FiMinus size={13} />
-                                                    }
-                                                </button>
+                                        {/* Info */}
+                                        <div className="cart-item-info">
+                                            <h3
+                                                className="cart-item-name"
+                                                onClick={() => navigate(`/product/${item.product_id}`)}
+                                            >
+                                                {item.product_name}
+                                            </h3>
 
-                                                <span className="qty-value">
-                                                    {busyId === item.cart_id
-                                                        ? <Loader small />
-                                                        : item.quantity
-                                                    }
-                                                </span>
-
-                                                <button
-                                                    className="qty-btn"
-                                                    onClick={() => handleIncrease(item.product_id, item.cart_id)}
-                                                    disabled={busyId === item.cart_id}
-                                                    title="Increase quantity"
-                                                >
-                                                    <FiPlus size={13} />
-                                                </button>
+                                            {/* Price — show strikethrough if discounted */}
+                                            <div className="cart-item-price">
+                                                KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                {hasDiscount && (
+                                                    <>
+                                                        <span className="cart-item-original-price">
+                                                            KES {Number(item.product_cost).toLocaleString()}
+                                                        </span>
+                                                        <span className="cart-item-discount-badge">
+                                                            -{item.discount_percent}%
+                                                        </span>
+                                                    </>
+                                                )}
                                             </div>
 
-                                            <span className="qty-subtotal">
-                                                KES {Number(item.product_cost * item.quantity).toLocaleString()}
-                                            </span>
+                                            {/* ── QTY CONTROLS ── */}
+                                            <div className="cart-qty-row">
+                                                <div className="cart-qty-controls">
+                                                    <button
+                                                        className="qty-btn"
+                                                        onClick={() => handleDecrease(item.cart_id, item.quantity)}
+                                                        disabled={busyId === item.cart_id}
+                                                        title={item.quantity === 1 ? 'Remove item' : 'Decrease quantity'}
+                                                    >
+                                                        {item.quantity === 1
+                                                            ? <FiTrash2 size={13} />
+                                                            : <FiMinus size={13} />
+                                                        }
+                                                    </button>
+
+                                                    <span className="qty-value">
+                                                        {busyId === item.cart_id
+                                                            ? <Loader small />
+                                                            : item.quantity
+                                                        }
+                                                    </span>
+
+                                                    <button
+                                                        className="qty-btn"
+                                                        onClick={() => handleIncrease(item.product_id, item.cart_id)}
+                                                        disabled={busyId === item.cart_id}
+                                                        title="Increase quantity"
+                                                    >
+                                                        <FiPlus size={13} />
+                                                    </button>
+                                                </div>
+
+                                                <span className="qty-subtotal">
+                                                    KES {(finalPrice * item.quantity).toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                </span>
+                                            </div>
                                         </div>
+
+                                        {/* Remove */}
+                                        <button
+                                            className="cart-item-remove"
+                                            onClick={() => handleRemove(item.cart_id)}
+                                            disabled={busyId === item.cart_id}
+                                            title="Remove item"
+                                        >
+                                            <FiTrash2 size={16} />
+                                        </button>
+
                                     </div>
-
-                                    {/* Remove */}
-                                    <button
-                                        className="cart-item-remove"
-                                        onClick={() => handleRemove(item.cart_id)}
-                                        disabled={busyId === item.cart_id}
-                                        title="Remove item"
-                                    >
-                                        <FiTrash2 size={16} />
-                                    </button>
-
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {/* ── ORDER SUMMARY ── */}
@@ -210,7 +222,9 @@ const Cart = () => {
                                     {cartItems.map(item => (
                                         <div key={item.cart_id} className="summary-row">
                                             <span>{item.product_name} × {item.quantity}</span>
-                                            <span>KES {Number(item.product_cost * item.quantity).toLocaleString()}</span>
+                                            <span>
+                                                KES {(getFinalPrice(item) * item.quantity).toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
@@ -220,7 +234,7 @@ const Cart = () => {
                                 <div className="summary-total">
                                     <span>Total</span>
                                     <span className="summary-total-amount">
-                                        KES {Number(cartTotal).toLocaleString()}
+                                        KES {Number(cartTotal).toLocaleString('en-KE', { maximumFractionDigits: 0 })}
                                     </span>
                                 </div>
 
@@ -245,7 +259,10 @@ const Cart = () => {
                                         style={{ padding: '13px', marginTop: '4px' }}
                                         disabled={paying}
                                     >
-                                        {paying ? <Loader small /> : `Pay KES ${Number(cartTotal).toLocaleString()} via M-Pesa`}
+                                        {paying
+                                            ? <Loader small />
+                                            : `Pay KES ${Number(cartTotal).toLocaleString('en-KE', { maximumFractionDigits: 0 })} via M-Pesa`
+                                        }
                                     </button>
                                 </form>
                             </div>

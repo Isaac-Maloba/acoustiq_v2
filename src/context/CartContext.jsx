@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { apiGetCart, apiAddToCart, apiRemoveFromCart, apiClearCart } from '../utils/api';
+import { apiGetCart, apiAddToCart, apiRemoveFromCart, apiDecrementCartItem, apiClearCart } from '../utils/api';
 import { useAuth } from './AuthContext';
 
 // ============================================================
@@ -56,10 +56,23 @@ export const CartProvider = ({ children }) => {
         }
     };
 
+    // ── DECREMENT CART ITEM ───────────────────────────────
+    // Reduces quantity by 1. Cart.jsx calls this for the minus button.
+    const decrementCartItem = async (cartId) => {
+        if (!user) return;
+        try {
+            await apiDecrementCartItem(cartId, user.user_id);
+            await fetchCart();
+        } catch (error) {
+            console.error("Failed to decrement cart item:", error);
+        }
+    };
+
     // ── REMOVE FROM CART ──────────────────────────────────
     const removeFromCart = async (cartId) => {
+        if (!user) return;
         try {
-            await apiRemoveFromCart(cartId);
+            await apiRemoveFromCart(cartId, user.user_id);
             setCartItems(prev => prev.filter(item => item.cart_id !== cartId));
         } catch (error) {
             console.error("Failed to remove from cart:", error);
@@ -78,15 +91,22 @@ export const CartProvider = ({ children }) => {
         }
     };
 
+    // ── FINAL PRICE HELPER ────────────────────────────────
+    // Applies discount if present. Used for totals and display.
+    const getFinalPrice = (item) => {
+        const discount = Number(item.discount_percent) || 0;
+        return Number(item.product_cost) * (1 - discount / 100);
+    };
+
     // ── CART COUNT ────────────────────────────────────────
     // Total number of items (respects quantity)
     // This is what shows on the cart badge in the Navbar
     const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
     // ── CART TOTAL ────────────────────────────────────────
-    // Total price of all items in the cart
+    // Uses discounted price per item
     const cartTotal = cartItems.reduce(
-        (total, item) => total + item.product_cost * item.quantity, 0
+        (total, item) => total + getFinalPrice(item) * item.quantity, 0
     );
 
     return (
@@ -95,7 +115,9 @@ export const CartProvider = ({ children }) => {
             cartCount,
             cartTotal,
             cartLoading,
+            getFinalPrice,
             addToCart,
+            decrementCartItem,
             removeFromCart,
             clearCart,
             fetchCart

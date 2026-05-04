@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiShoppingCart, FiHeart, FiChevronLeft, FiEdit } from 'react-icons/fi';
+import { FiShoppingCart, FiHeart, FiChevronLeft, FiEdit, FiPackage } from 'react-icons/fi';
 import { FaStar, FaStarHalfAlt, FaRegStar } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -69,6 +69,8 @@ const ProductDetail = () => {
     const { user }       = useAuth();
     const { addToCart }  = useCart();
     const navigate       = useNavigate();
+
+    const isAdmin = user?.role === 'admin';
 
     // ── PRODUCT STATE ──
     const [product,     setProduct]     = useState(null);
@@ -178,7 +180,7 @@ const ProductDetail = () => {
     // ── SUBMIT RATING ──
     const handleSubmitRating = async (e) => {
         e.preventDefault();
-        if (!user)       { navigate('/signin'); return; }
+        if (!user)        { navigate('/signin'); return; }
         if (myStars === 0) { setRatingErr('Please select a star rating.'); return; }
 
         setSubmitting(true);
@@ -214,6 +216,19 @@ const ProductDetail = () => {
     if (error)   return <div className="page-wrapper"><div className="alert alert-error">{error}</div></div>;
     if (!product) return null;
 
+    // ── PRICE CALCULATION ──
+    const discount   = Number(product.discount_percent) || 0;
+    const finalPrice = Number(product.product_cost) * (1 - discount / 100);
+    const hasDiscount = discount > 0;
+
+    // ── STOCK STATUS ──
+    const stock       = Number(product.stock_quantity);
+    const outOfStock  = stock === 0;
+    const lowStock    = stock > 0 && stock <= 5;
+
+    // ── CAN EDIT: owner or admin ──
+    const canEdit = user && (user.user_id === product.added_by || isAdmin);
+
     // ============================================================
     //  RENDER
     // ============================================================
@@ -237,6 +252,9 @@ const ProductDetail = () => {
                                 alt={product.product_name}
                                 onError={(e) => { e.target.src = '/placeholder.png'; }}
                             />
+                            {outOfStock && (
+                                <div className="gallery-out-of-stock-overlay">Out of Stock</div>
+                            )}
                         </div>
                         {allImages.length > 1 && (
                             <div className="gallery-thumbs">
@@ -263,7 +281,7 @@ const ProductDetail = () => {
                         {/* Category + Edit button */}
                         <div className="product-info-top">
                             <span className="badge badge-ice">{product.category}</span>
-                            {user && user.user_id === product.added_by && (
+                            {canEdit && (
                                 <button
                                     className="btn btn-ghost"
                                     style={{ fontSize: '12px', padding: '6px 12px' }}
@@ -276,6 +294,19 @@ const ProductDetail = () => {
 
                         <h1 className="product-name">{product.product_name}</h1>
 
+                        {/* Store link */}
+                        {product.store_name && (
+                            <button
+                                className="product-store-link"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/store/${product.store_slug}`);
+                                }}
+                            >
+                                {product.store_name}
+                            </button>
+                        )}
+
                         {/* Rating summary */}
                         <div className="product-rating-row">
                             <StarDisplay rating={product.avg_rating || 0} count={product.rating_count || 0} />
@@ -283,7 +314,28 @@ const ProductDetail = () => {
 
                         {/* Price */}
                         <div className="product-price">
-                            KES {Number(product.product_cost).toLocaleString()}
+                            KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                            {hasDiscount && (
+                                <span className="product-original-price">
+                                    KES {Number(product.product_cost).toLocaleString()}
+                                </span>
+                            )}
+                            {hasDiscount && (
+                                <span className="badge badge-error" style={{ fontSize: '11px', marginLeft: '8px' }}>
+                                    -{discount}% OFF
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Stock status */}
+                        <div className="product-stock-status">
+                            <FiPackage size={13} />
+                            {outOfStock
+                                ? <span className="stock-out">Out of stock</span>
+                                : lowStock
+                                    ? <span className="stock-low">Only {stock} left</span>
+                                    : <span className="stock-ok">In stock</span>
+                            }
                         </div>
 
                         {/* Description */}
@@ -322,11 +374,13 @@ const ProductDetail = () => {
                                 className="btn btn-ice"
                                 style={{ flex: 1, padding: '13px' }}
                                 onClick={handleAddToCart}
-                                disabled={cartAdding}
+                                disabled={cartAdding || outOfStock}
                             >
                                 {cartAdding
                                     ? <Loader small />
-                                    : <><FiShoppingCart size={16} /> Add to Cart</>
+                                    : outOfStock
+                                        ? 'Out of Stock'
+                                        : <><FiShoppingCart size={16} /> Add to Cart</>
                                 }
                             </button>
                             <button
@@ -425,28 +479,37 @@ const ProductDetail = () => {
                     <div className="related-section">
                         <h2 className="related-title">Related Products</h2>
                         <div className="related-grid">
-                            {related.map(item => (
-                                <div
-                                    key={item.product_id}
-                                    className="related-card"
-                                    onClick={() => navigate(`/product/${item.product_id}`)}
-                                >
-                                    <div className="related-card-img">
-                                        <img
-                                            src={imgUrl(item.product_photo)}
-                                            alt={item.product_name}
-                                            onError={(e) => { e.target.src = '/placeholder.png'; }}
-                                        />
-                                    </div>
-                                    <div className="related-card-body">
-                                        <h4 className="related-card-name">{item.product_name}</h4>
-                                        <StarDisplay rating={item.avg_rating || 0} count={0} />
-                                        <div className="related-card-price">
-                                            KES {Number(item.product_cost).toLocaleString()}
+                            {related.map(item => {
+                                const relDiscount   = Number(item.discount_percent) || 0;
+                                const relFinalPrice = Number(item.product_cost) * (1 - relDiscount / 100);
+                                return (
+                                    <div
+                                        key={item.product_id}
+                                        className="related-card"
+                                        onClick={() => navigate(`/product/${item.product_id}`)}
+                                    >
+                                        <div className="related-card-img">
+                                            <img
+                                                src={imgUrl(item.product_photo)}
+                                                alt={item.product_name}
+                                                onError={(e) => { e.target.src = '/placeholder.png'; }}
+                                            />
+                                        </div>
+                                        <div className="related-card-body">
+                                            <h4 className="related-card-name">{item.product_name}</h4>
+                                            <StarDisplay rating={item.avg_rating || 0} count={0} />
+                                            <div className="related-card-price">
+                                                KES {relFinalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                {relDiscount > 0 && (
+                                                    <span className="product-card-original-price">
+                                                        KES {Number(item.product_cost).toLocaleString()}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}

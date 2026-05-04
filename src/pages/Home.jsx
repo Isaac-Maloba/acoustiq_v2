@@ -58,11 +58,14 @@ const Home = () => {
     const navigate   = useNavigate();
     const location   = useLocation();
 
+    const isSeller = user?.role === 'seller';
+    const isAdmin  = user?.role === 'admin';
+
     // ── PRODUCTS STATE ──
-    const [products,    setProducts]    = useState([]);
-    const [featured,    setFeatured]    = useState([]);
-    const [loading,     setLoading]     = useState(false);
-    const [error,       setError]       = useState('');
+    const [products,     setProducts]     = useState([]);
+    const [featured,     setFeatured]     = useState([]);
+    const [loading,      setLoading]      = useState(false);
+    const [error,        setError]        = useState('');
     const [favouriteIds, setFavouriteIds] = useState([]);
 
     // ── FILTER STATE ──
@@ -98,14 +101,14 @@ const Home = () => {
             setLoading(true);
             setError('');
             const params = {};
-            if (search)    params.search           = search;
-            if (category)  params.category         = category;
-            if (brand)     params.brand             = brand;
-            if (level)     params.level             = level;
-            if (condition) params.condition_status  = condition;
-            if (genre)     params.genre             = genre;
-            if (priceMin)  params.price_min         = priceMin;
-            if (priceMax)  params.price_max         = priceMax;
+            if (search)    params.search          = search;
+            if (category)  params.category        = category;
+            if (brand)     params.brand            = brand;
+            if (level)     params.level            = level;
+            if (condition) params.condition_status = condition;
+            if (genre)     params.genre            = genre;
+            if (priceMin)  params.price_min        = priceMin;
+            if (priceMax)  params.price_max        = priceMax;
 
             const response = await apiGetProducts(params);
             const all      = response.data;
@@ -163,6 +166,12 @@ const Home = () => {
         setOpenFilter(prev => prev === name ? '' : name);
     };
 
+    // ── FINAL PRICE HELPER ──
+    const getFinalPrice = (product) => {
+        const discount = Number(product.discount_percent) || 0;
+        return Number(product.product_cost) * (1 - discount / 100);
+    };
+
     // ── CAROUSEL SETTINGS ──
     const carouselSettings = {
         dots: true,
@@ -207,6 +216,15 @@ const Home = () => {
         }
     ];
 
+    // ── HERO SECONDARY CTA ──
+    // Only sellers/admins see "Add a Product"; customers see "Sell on Acoustiq"; guests see "Join Acoustiq"
+    const getHeroCta = () => {
+        if (isSeller || isAdmin) return { label: 'Add a Product',    path: '/add-product' };
+        if (user)                return { label: 'Sell on Acoustiq', path: '/seller/apply' };
+        return                          { label: 'Join Acoustiq',    path: '/signup' };
+    };
+    const heroCta = getHeroCta();
+
     // ============================================================
     //  RENDER
     // ============================================================
@@ -235,9 +253,9 @@ const Home = () => {
                                         </button>
                                         <button
                                             className="btn btn-ghost"
-                                            onClick={() => navigate(user ? '/add-product' : '/signup')}
+                                            onClick={() => navigate(heroCta.path)}
                                         >
-                                            {user ? 'Add a Product' : 'Join Acoustiq'}
+                                            {heroCta.label}
                                         </button>
                                     </div>
                                 </div>
@@ -268,11 +286,11 @@ const Home = () => {
 
                     {/* Filter dropdowns */}
                     {[
-                        { name: 'category',  label: 'Category',  options: CATEGORIES,  value: category,  setter: setCategory },
-                        { name: 'brand',     label: 'Brand',     options: BRANDS,      value: brand,     setter: setBrand },
-                        { name: 'level',     label: 'Level',     options: LEVELS,      value: level,     setter: setLevel },
-                        { name: 'condition', label: 'Condition', options: CONDITIONS,  value: condition, setter: setCondition },
-                        { name: 'genre',     label: 'Genre',     options: GENRES,      value: genre,     setter: setGenre },
+                        { name: 'category',  label: 'Category',  options: CATEGORIES, value: category,  setter: setCategory },
+                        { name: 'brand',     label: 'Brand',     options: BRANDS,     value: brand,     setter: setBrand },
+                        { name: 'level',     label: 'Level',     options: LEVELS,     value: level,     setter: setLevel },
+                        { name: 'condition', label: 'Condition', options: CONDITIONS, value: condition, setter: setCondition },
+                        { name: 'genre',     label: 'Genre',     options: GENRES,     value: genre,     setter: setGenre },
                     ].map(filter => (
                         <div key={filter.name} className="filter-dropdown-wrapper">
                             <button
@@ -371,28 +389,37 @@ const Home = () => {
                             <h2>Editor's Pick</h2>
                         </div>
                         <div className="featured-strip">
-                            {featured.map(product => (
-                                <div
-                                    key={product.product_id}
-                                    className="featured-card"
-                                    onClick={() => navigate(`/product/${product.product_id}`)}
-                                >
-                                    <div className="featured-card-img">
-                                        <img src={imgUrl(product.product_photo)} alt={product.product_name} />
-                                    </div>
-                                    <div className="featured-card-body">
-                                        <span className="badge badge-gold">✦ Featured</span>
-                                        <h3 className="featured-card-name">{product.product_name}</h3>
-                                        <p className="featured-card-desc">
-                                            {product.product_description.slice(0, 100)}...
-                                        </p>
-                                        <StarDisplay rating={product.avg_rating} count={product.rating_count} />
-                                        <div className="featured-card-price">
-                                            KES {Number(product.product_cost).toLocaleString()}
+                            {featured.map(product => {
+                                const finalPrice = getFinalPrice(product);
+                                const hasDiscount = Number(product.discount_percent) > 0;
+                                return (
+                                    <div
+                                        key={product.product_id}
+                                        className="featured-card"
+                                        onClick={() => navigate(`/product/${product.product_id}`)}
+                                    >
+                                        <div className="featured-card-img">
+                                            <img src={imgUrl(product.product_photo)} alt={product.product_name} />
+                                        </div>
+                                        <div className="featured-card-body">
+                                            <span className="badge badge-gold">✦ Featured</span>
+                                            <h3 className="featured-card-name">{product.product_name}</h3>
+                                            <p className="featured-card-desc">
+                                                {product.product_description.slice(0, 100)}...
+                                            </p>
+                                            <StarDisplay rating={product.avg_rating} count={product.rating_count} />
+                                            <div className="featured-card-price">
+                                                KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                {hasDiscount && (
+                                                    <span className="product-card-original-price">
+                                                        KES {Number(product.product_cost).toLocaleString()}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </section>
                 )}
@@ -415,41 +442,58 @@ const Home = () => {
                     )}
 
                     <div className="product-grid">
-                        {products.map(product => (
-                            <div
-                                key={product.product_id}
-                                className="product-card"
-                                onClick={() => navigate(`/product/${product.product_id}`)}
-                            >
-                                {/* Favourite button */}
-                                <button
-                                    className={`fav-btn ${favouriteIds.includes(product.product_id) ? 'fav-active' : ''}`}
-                                    onClick={(e) => handleToggleFavourite(e, product.product_id)}
-                                    title={favouriteIds.includes(product.product_id) ? 'Remove from favourites' : 'Add to favourites'}
+                        {products.map(product => {
+                            const finalPrice  = getFinalPrice(product);
+                            const hasDiscount = Number(product.discount_percent) > 0;
+
+                            return (
+                                <div
+                                    key={product.product_id}
+                                    className="product-card"
+                                    onClick={() => navigate(`/product/${product.product_id}`)}
                                 >
-                                    <FiHeart size={14} />
-                                </button>
+                                    {/* Discount badge */}
+                                    {hasDiscount && (
+                                        <span className="product-card-discount-badge">
+                                            -{product.discount_percent}%
+                                        </span>
+                                    )}
 
-                                {/* Product image */}
-                                <div className="product-card-img">
-                                    <img
-                                        src={imgUrl(product.product_photo)}
-                                        alt={product.product_name}
-                                        onError={(e) => { e.target.src = '/placeholder.png'; }}
-                                    />
-                                </div>
+                                    {/* Favourite button */}
+                                    <button
+                                        className={`fav-btn ${favouriteIds.includes(product.product_id) ? 'fav-active' : ''}`}
+                                        onClick={(e) => handleToggleFavourite(e, product.product_id)}
+                                        title={favouriteIds.includes(product.product_id) ? 'Remove from favourites' : 'Add to favourites'}
+                                    >
+                                        <FiHeart size={14} />
+                                    </button>
 
-                                {/* Product info */}
-                                <div className="product-card-body">
-                                    <div className="product-card-category">{product.category}</div>
-                                    <h3 className="product-card-name">{product.product_name}</h3>
-                                    <StarDisplay rating={product.avg_rating} count={product.rating_count} />
-                                    <div className="product-card-price">
-                                        KES {Number(product.product_cost).toLocaleString()}
+                                    {/* Product image */}
+                                    <div className="product-card-img">
+                                        <img
+                                            src={imgUrl(product.product_photo)}
+                                            alt={product.product_name}
+                                            onError={(e) => { e.target.src = '/placeholder.png'; }}
+                                        />
+                                    </div>
+
+                                    {/* Product info */}
+                                    <div className="product-card-body">
+                                        <div className="product-card-category">{product.category}</div>
+                                        <h3 className="product-card-name">{product.product_name}</h3>
+                                        <StarDisplay rating={product.avg_rating} count={product.rating_count} />
+                                        <div className="product-card-price">
+                                            KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                            {hasDiscount && (
+                                                <span className="product-card-original-price">
+                                                    KES {Number(product.product_cost).toLocaleString()}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </section>
 

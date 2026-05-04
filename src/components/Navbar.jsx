@@ -1,23 +1,31 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiShoppingCart, FiHeart, FiUser, FiMenu, FiX, FiSun, FiMoon, FiLogOut, FiSettings } from 'react-icons/fi';
-import { useAuth } from '../context/AuthContext';
+import {
+    FiShoppingCart, FiHeart, FiUser, FiMenu, FiX,
+    FiSun, FiMoon, FiLogOut, FiSettings, FiPackage,
+    FiShield, FiShoppingBag, FiBarChart2
+} from 'react-icons/fi';
+import { useAuth }  from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useCart } from '../context/CartContext';
+import { useCart }  from '../context/CartContext';
 import '../css/Navbar.css';
 
 const Navbar = () => {
-    const { user, logout }      = useAuth();
+    const { user, logout }        = useAuth();
     const { isDark, toggleTheme } = useTheme();
-    const { cartCount }          = useCart();
-    const navigate               = useNavigate();
+    const { cartCount }           = useCart();
+    const navigate                = useNavigate();
 
     const [menuOpen,    setMenuOpen]    = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
 
+    const isSeller = user?.role === 'seller';
+    const isAdmin  = user?.role === 'admin';
+
     const handleLogout = () => {
         logout();
         setProfileOpen(false);
+        setMenuOpen(false);
         navigate('/');
     };
 
@@ -36,6 +44,7 @@ const Navbar = () => {
                     <Link to="/?category=Physical+Instrument">Instruments</Link>
                     <Link to="/?category=VST+Plugin">Plugins</Link>
                     <Link to="/?category=Accessory">Accessories</Link>
+                    <Link to="/stores">Stores</Link>
                 </div>
 
                 {/* ── RIGHT SIDE ── */}
@@ -75,6 +84,10 @@ const Navbar = () => {
                                 >
                                     {user.first_name.charAt(0).toUpperCase()}
                                     {user.last_name.charAt(0).toUpperCase()}
+                                    {/* Role indicator dot */}
+                                    {(isSeller || isAdmin) && (
+                                        <span className={`role-dot ${isAdmin ? 'role-dot-admin' : 'role-dot-seller'}`} />
+                                    )}
                                 </button>
 
                                 {profileOpen && (
@@ -84,8 +97,16 @@ const Navbar = () => {
                                                 {user.first_name} {user.last_name}
                                             </p>
                                             <p className="profile-email">{user.email}</p>
+                                            {(isSeller || isAdmin) && (
+                                                <span className={`navbar-role-badge ${isAdmin ? 'badge-admin' : 'badge-seller'}`}>
+                                                    {isAdmin ? '⬡ Admin' : '◈ Seller'}
+                                                </span>
+                                            )}
                                         </div>
+
                                         <div className="profile-dropdown-divider" />
+
+                                        {/* Always visible */}
                                         <Link
                                             to="/profile"
                                             className="profile-dropdown-item"
@@ -94,12 +115,57 @@ const Navbar = () => {
                                             <FiSettings size={14} /> My Profile
                                         </Link>
                                         <Link
-                                            to="/add-product"
+                                            to="/orders"
                                             className="profile-dropdown-item"
                                             onClick={() => setProfileOpen(false)}
                                         >
-                                            <FiUser size={14} /> Add Product
+                                            <FiPackage size={14} /> My Orders
                                         </Link>
+
+                                        {/* Seller links */}
+                                        {(isSeller || isAdmin) && (
+                                            <>
+                                                <div className="profile-dropdown-divider" />
+                                                <div className="profile-dropdown-section-label">Seller</div>
+                                                <Link
+                                                    to="/seller/dashboard"
+                                                    className="profile-dropdown-item"
+                                                    onClick={() => setProfileOpen(false)}
+                                                >
+                                                    <FiBarChart2 size={14} /> Dashboard
+                                                </Link>
+                                                <Link
+                                                    to="/seller/products"
+                                                    className="profile-dropdown-item"
+                                                    onClick={() => setProfileOpen(false)}
+                                                >
+                                                    <FiShoppingBag size={14} /> My Products
+                                                </Link>
+                                                <Link
+                                                    to="/add-product"
+                                                    className="profile-dropdown-item"
+                                                    onClick={() => setProfileOpen(false)}
+                                                >
+                                                    <FiUser size={14} /> Add Product
+                                                </Link>
+                                            </>
+                                        )}
+
+                                        {/* Admin links */}
+                                        {isAdmin && (
+                                            <>
+                                                <div className="profile-dropdown-divider" />
+                                                <div className="profile-dropdown-section-label">Admin</div>
+                                                <Link
+                                                    to="/admin/dashboard"
+                                                    className="profile-dropdown-item"
+                                                    onClick={() => setProfileOpen(false)}
+                                                >
+                                                    <FiShield size={14} /> Admin Panel
+                                                </Link>
+                                            </>
+                                        )}
+
                                         <div className="profile-dropdown-divider" />
                                         <button
                                             className="profile-dropdown-item danger"
@@ -135,16 +201,39 @@ const Navbar = () => {
             {/* ── MOBILE MENU ── */}
             {menuOpen && (
                 <div className="mobile-menu">
-                    <Link to="/"                            onClick={() => setMenuOpen(false)}>Shop</Link>
+                    <Link to="/"                               onClick={() => setMenuOpen(false)}>Shop</Link>
                     <Link to="/?category=Physical+Instrument" onClick={() => setMenuOpen(false)}>Instruments</Link>
-                    <Link to="/?category=VST+Plugin"        onClick={() => setMenuOpen(false)}>Plugins</Link>
-                    <Link to="/?category=Accessory"         onClick={() => setMenuOpen(false)}>Accessories</Link>
+                    <Link to="/?category=VST+Plugin"          onClick={() => setMenuOpen(false)}>Plugins</Link>
+                    <Link to="/?category=Accessory"           onClick={() => setMenuOpen(false)}>Accessories</Link>
+                    <Link to="/stores"                        onClick={() => setMenuOpen(false)}>Stores</Link>
+
                     {user ? (
                         <>
+                            <div className="mobile-menu-divider" />
                             <Link to="/favourites" onClick={() => setMenuOpen(false)}>Favourites</Link>
-                            <Link to="/cart"       onClick={() => setMenuOpen(false)}>Cart {cartCount > 0 && `(${cartCount})`}</Link>
+                            <Link to="/cart"       onClick={() => setMenuOpen(false)}>
+                                Cart {cartCount > 0 && `(${cartCount})`}
+                            </Link>
+                            <Link to="/orders"     onClick={() => setMenuOpen(false)}>My Orders</Link>
                             <Link to="/profile"    onClick={() => setMenuOpen(false)}>My Profile</Link>
-                            <Link to="/add-product" onClick={() => setMenuOpen(false)}>Add Product</Link>
+
+                            {(isSeller || isAdmin) && (
+                                <>
+                                    <div className="mobile-menu-divider" />
+                                    <Link to="/seller/dashboard" onClick={() => setMenuOpen(false)}>Seller Dashboard</Link>
+                                    <Link to="/seller/products"  onClick={() => setMenuOpen(false)}>My Products</Link>
+                                    <Link to="/add-product"      onClick={() => setMenuOpen(false)}>Add Product</Link>
+                                </>
+                            )}
+
+                            {isAdmin && (
+                                <>
+                                    <div className="mobile-menu-divider" />
+                                    <Link to="/admin/dashboard" onClick={() => setMenuOpen(false)}>Admin Panel</Link>
+                                </>
+                            )}
+
+                            <div className="mobile-menu-divider" />
                             <button onClick={handleLogout}>Sign Out</button>
                         </>
                     ) : (
