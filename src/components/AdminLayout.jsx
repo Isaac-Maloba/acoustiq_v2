@@ -1,102 +1,77 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import {
-    FiGrid, FiUsers, FiShoppingBag, FiFileText,
-    FiStore, FiMessageSquare, FiShield
-} from 'react-icons/fi';
-import '../../css/Admin.css';
+import { useAuth } from '../context/AuthContext';
+import '../css/Admin.css';
 
-// ============================================================
-//  ADMIN LAYOUT
-//  Wraps all admin pages with a shared sidebar + main area.
-//  Usage:
-//    <AdminLayout title="Page Title" subtitle="optional sub">
-//      {content}
-//    </AdminLayout>
-// ============================================================
+// ── NAV ITEMS ─────────────────────────────────────────────
+const NAV_ITEMS = [
+    {
+        section: 'Overview',
+        items: [
+            { to: '/admin/dashboard',     label: 'Dashboard',     icon: '▦' },
+        ]
+    },
+    {
+        section: 'Manage',
+        items: [
+            { to: '/admin/applications',  label: 'Applications',  icon: '◈', alertKey: 'pendingApplications' },
+            { to: '/admin/users',         label: 'Users',         icon: '◉' },
+            { to: '/admin/stores',        label: 'Stores',        icon: '⬡' },
+            { to: '/admin/orders',        label: 'Orders',        icon: '◎' },
+            { to: '/admin/complaints',    label: 'Complaints',    icon: '◬', alertKey: 'openComplaints' },
+        ]
+    }
+];
 
-const AdminLayout = ({ title, subtitle, children, pendingApplications = 0, openComplaints = 0 }) => {
-    const { user }     = useAuth();
+// ── COMPONENT ─────────────────────────────────────────────
+const AdminLayout = ({ title, subtitle, children, alerts = {} }) => {
+    const { user }   = useAuth();
     const { pathname } = useLocation();
 
-    const navItems = [
-        {
-            label:   'Dashboard',
-            to:      '/admin/dashboard',
-            icon:    <FiGrid size={15} />,
-        },
-        {
-            label:   'Applications',
-            to:      '/admin/applications',
-            icon:    <FiFileText size={15} />,
-            dot:     pendingApplications > 0,
-        },
-        {
-            label:   'Users',
-            to:      '/admin/users',
-            icon:    <FiUsers size={15} />,
-        },
-        {
-            label:   'Orders',
-            to:      '/admin/orders',
-            icon:    <FiShoppingBag size={15} />,
-        },
-        {
-            label:   'Stores',
-            to:      '/admin/stores',
-            icon:    <FiStore size={15} />,
-        },
-        {
-            label:   'Complaints',
-            to:      '/admin/complaints',
-            icon:    <FiMessageSquare size={15} />,
-            dot:     openComplaints > 0,
-        },
-    ];
-
     return (
-        <div className="page-wrapper">
+        <div className="page-wrapper" style={{ padding: '32px 24px' }}>
             <div className="admin-page">
 
                 {/* ── SIDEBAR ── */}
                 <aside className="admin-sidebar">
 
                     <div className="admin-sidebar-header">
-                        <FiShield size={18} className="admin-sidebar-icon" />
+                        <span className="admin-sidebar-icon">⬡</span>
                         <div>
                             <p className="admin-sidebar-title">Admin Panel</p>
                             <p className="admin-sidebar-sub">{user?.first_name} {user?.last_name}</p>
                         </div>
                     </div>
 
-                    <nav>
-                        <p className="admin-nav-section-label">Management</p>
-                        {navItems.map(item => (
-                            <Link
-                                key={item.to}
-                                to={item.to}
-                                className={`admin-nav-item ${pathname === item.to ? 'active' : ''}`}
-                            >
-                                <span className="admin-nav-item-left">
-                                    {item.icon}
-                                    {item.label}
-                                </span>
-                                {item.dot && <span className="admin-nav-dot" />}
-                            </Link>
-                        ))}
-                    </nav>
+                    {NAV_ITEMS.map(({ section, items }) => (
+                        <div key={section}>
+                            <p className="admin-nav-section-label">{section}</p>
+                            {items.map(({ to, label, icon, alertKey }) => {
+                                const isActive  = pathname === to;
+                                const hasAlert  = alertKey && alerts[alertKey] > 0;
+                                return (
+                                    <Link
+                                        key={to}
+                                        to={to}
+                                        className={`admin-nav-item${isActive ? ' active' : ''}`}
+                                    >
+                                        <span className="admin-nav-item-left">
+                                            <span style={{ fontSize: '14px', lineHeight: 1 }}>{icon}</span>
+                                            {label}
+                                        </span>
+                                        {hasAlert && <span className="admin-nav-dot" />}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ))}
 
                 </aside>
 
                 {/* ── MAIN ── */}
                 <main className="admin-main">
-                    {(title || subtitle) && (
-                        <div style={{ marginBottom: '24px' }}>
-                            {title    && <h1 className="admin-page-title">{title}</h1>}
-                            {subtitle && <p  className="admin-page-sub">{subtitle}</p>}
-                        </div>
-                    )}
+                    <h1 className="admin-page-title">{title}</h1>
+                    {subtitle && <p className="admin-page-sub">{subtitle}</p>}
                     {children}
                 </main>
 

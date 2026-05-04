@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiAdminStats } from '../../utils/api';
+import AdminLayout from '../../components/AdminLayout';
 import Loader from '../../components/Loader';
-import '../../css/Admin.css';
 
 const AdminDashboard = () => {
     const { user } = useAuth();
@@ -17,7 +17,7 @@ const AdminDashboard = () => {
             try {
                 const res = await apiAdminStats(user.user_id);
                 setStats(res.data);
-            } catch (err) {
+            } catch {
                 setError('Failed to load dashboard stats.');
             } finally {
                 setLoading(false);
@@ -26,33 +26,31 @@ const AdminDashboard = () => {
         fetchStats();
     }, [user.user_id]);
 
-    const fmt = (n) =>
-        Number(n).toLocaleString('en-KE', { maximumFractionDigits: 0 });
+    const fmt = (n) => Number(n).toLocaleString('en-KE', { maximumFractionDigits: 0 });
 
     if (loading) return (
-        <div className="page-wrapper">
+        <AdminLayout title="Dashboard">
             <div className="loader-wrapper"><Loader /></div>
-        </div>
+        </AdminLayout>
     );
 
     if (error) return (
-        <div className="page-wrapper">
+        <AdminLayout title="Dashboard">
             <div className="alert alert-error">{error}</div>
-        </div>
+        </AdminLayout>
     );
 
+    const alerts = {
+        pendingApplications: stats.pending_applications,
+        openComplaints:      stats.open_complaints,
+    };
+
     return (
-        <div className="page-wrapper admin-page">
-
-            {/* ── HEADER ── */}
-            <div className="admin-header">
-                <div>
-                    <h1 className="admin-title">Admin Dashboard</h1>
-                    <p className="admin-sub">Platform overview — welcome back, {user.first_name}</p>
-                </div>
-                <span className="badge badge-gold">Admin</span>
-            </div>
-
+        <AdminLayout
+            title="Dashboard"
+            subtitle={`Platform overview — welcome back, ${user.first_name}`}
+            alerts={alerts}
+        >
             {/* ── STAT CARDS ── */}
             <div className="admin-stats-grid">
 
@@ -77,7 +75,7 @@ const AdminDashboard = () => {
                     <Link to="/admin/stores" className="admin-stat-link">Manage stores →</Link>
                 </div>
 
-                <div className="admin-stat-card highlight">
+                <div className="admin-stat-card">
                     <p className="admin-stat-label">Pending Applications</p>
                     <p className="admin-stat-value text-gold">{fmt(stats.pending_applications)}</p>
                     <p className="admin-stat-sub">Awaiting your review</p>
@@ -93,33 +91,17 @@ const AdminDashboard = () => {
 
             </div>
 
-            {/* ── QUICK LINKS ── */}
-            <div className="admin-section">
-                <h2 className="admin-section-title">Quick Actions</h2>
-                <div className="admin-quick-links">
-                    <Link to="/admin/applications" className="admin-quick-btn btn btn-gold">
-                        Review Applications
-                        {stats.pending_applications > 0 && (
-                            <span className="admin-quick-badge">{stats.pending_applications}</span>
-                        )}
-                    </Link>
-                    <Link to="/admin/users"        className="admin-quick-btn btn btn-ghost">Manage Users</Link>
-                    <Link to="/admin/stores"       className="admin-quick-btn btn btn-ghost">Manage Stores</Link>
-                    <Link to="/admin/orders"       className="admin-quick-btn btn btn-ghost">All Orders</Link>
-                    <Link to="/admin/complaints"   className="admin-quick-btn btn btn-ghost">
-                        Complaints
-                        {stats.open_complaints > 0 && (
-                            <span className="admin-quick-badge">{stats.open_complaints}</span>
-                        )}
-                    </Link>
-                </div>
-            </div>
-
             {/* ── RECENT ORDERS ── */}
             <div className="admin-section">
-                <h2 className="admin-section-title">Recent Orders</h2>
+                <div className="admin-section-header">
+                    <h2 className="admin-section-title">Recent Orders</h2>
+                    <Link to="/admin/orders" className="btn btn-ghost" style={{ fontSize: '13px' }}>
+                        View all →
+                    </Link>
+                </div>
+
                 {stats.recent_orders.length === 0 ? (
-                    <p className="admin-empty">No orders yet.</p>
+                    <p className="admin-empty" style={{ padding: '20px' }}>No orders yet.</p>
                 ) : (
                     <div className="admin-table-wrapper">
                         <table className="admin-table">
@@ -136,7 +118,7 @@ const AdminDashboard = () => {
                                 {stats.recent_orders.map(order => (
                                     <tr key={order.order_id}>
                                         <td className="text-ice">#{order.order_id}</td>
-                                        <td>{order.first_name} {order.last_name}</td>
+                                        <td className="col-primary">{order.first_name} {order.last_name}</td>
                                         <td>KES {fmt(order.total_amount)}</td>
                                         <td>
                                             <span className={`badge ${statusBadge(order.status)}`}>
@@ -152,14 +134,9 @@ const AdminDashboard = () => {
                         </table>
                     </div>
                 )}
-                <div style={{ marginTop: '12px' }}>
-                    <Link to="/admin/orders" className="btn btn-ghost" style={{ fontSize: '13px' }}>
-                        View all orders →
-                    </Link>
-                </div>
             </div>
 
-        </div>
+        </AdminLayout>
     );
 };
 
@@ -169,7 +146,7 @@ const statusBadge = (status) => {
         case 'shipped':    return 'badge-gold';
         case 'delivered':  return 'badge-success';
         case 'cancelled':  return 'badge-error';
-        default:           return 'badge-ice';
+        default:           return 'badge-muted';
     }
 };
 
