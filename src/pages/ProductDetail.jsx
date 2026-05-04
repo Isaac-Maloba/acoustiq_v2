@@ -1,3 +1,4 @@
+// src/pages/ProductDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiShoppingCart, FiHeart, FiChevronLeft, FiEdit, FiPackage } from 'react-icons/fi';
@@ -132,7 +133,8 @@ const ProductDetail = () => {
         try {
             setRatingsLoad(true);
             const response = await apiGetRatings(product_id);
-            setRatings(response.data);
+            // API returns { ratings: [...], average: ..., count: ... }
+            setRatings(response.data.ratings || []);
             setRatingsLoad(false);
         } catch (err) {
             setRatingsLoad(false);
