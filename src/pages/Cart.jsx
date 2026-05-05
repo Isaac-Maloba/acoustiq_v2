@@ -1,26 +1,26 @@
+// src/pages/Cart.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiTrash2, FiShoppingCart, FiMinus, FiPlus } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { apiMpesaPayment } from '../utils/api';
+import { apiAddToCart, apiMpesaPayment } from '../utils/api';   // ← import apiAddToCart
 import Loader from '../components/Loader';
 import '../css/Cart.css';
 
 const Cart = () => {
     const { user }                                        = useAuth();
     const { cartItems, cartTotal, cartLoading, getFinalPrice,
-            removeFromCart, decrementCartItem,
-            clearCart, fetchCart, addToCart }             = useCart();
+            removeFromCart, decrementCartItem, fetchCart } = useCart();
     const navigate                                        = useNavigate();
 
-    const [phone,   setPhone]   = useState('');
-    const [paying,  setPaying]  = useState(false);
-    const [payMsg,  setPayMsg]  = useState('');
-    const [payErr,  setPayErr]  = useState('');
+    const [phone,            setPhone]            = useState('');
+    const [deliveryAddress,  setDeliveryAddress]  = useState('');
+    const [paying,           setPaying]           = useState(false);
+    const [payMsg,           setPayMsg]           = useState('');
+    const [payErr,           setPayErr]           = useState('');
 
-    // Track which cart_id is busy so buttons disable individually
-    const [busyId,  setBusyId]  = useState(null);
+    const [busyId,           setBusyId]           = useState(null);
 
     if (!user) {
         return (
@@ -33,13 +33,19 @@ const Cart = () => {
         );
     }
 
-    // ── INCREASE QTY ──
+    // ── INCREASE QTY (with error display) ──
     const handleIncrease = async (productId, cartId) => {
         setBusyId(cartId);
         try {
-            await addToCart(productId);
+            const formData = new FormData();
+            formData.append('user_id',    user.user_id);
+            formData.append('product_id', productId);
+            await apiAddToCart(formData);
+            await fetchCart();
         } catch (err) {
-            console.error('Failed to increase quantity:', err);
+            const msg = err.response?.data?.message || 'Failed to increase quantity.';
+            setPayErr(msg);
+            setTimeout(() => setPayErr(''), 4000);
         } finally {
             setBusyId(null);
         }
@@ -72,17 +78,23 @@ const Cart = () => {
     const handleCheckout = async (e) => {
         e.preventDefault();
         if (cartItems.length === 0) return;
+        if (!phone.trim() || !deliveryAddress.trim()) {
+            setPayErr('Phone number and delivery address are required.');
+            return;
+        }
         setPaying(true);
         setPayErr('');
         setPayMsg('');
         try {
             const formData = new FormData();
-            formData.append('user_id', user.user_id);
-            formData.append('phone',   phone);
-            formData.append('amount',  Math.round(cartTotal));
+            formData.append('user_id',          user.user_id);
+            formData.append('phone',            phone.trim());
+            formData.append('delivery_address', deliveryAddress.trim());
+            formData.append('amount',           Math.round(cartTotal));
             await apiMpesaPayment(formData);
             setPayMsg('Payment initiated! Check your phone to complete the M-Pesa prompt. Your cart will clear once confirmed.');
             setPhone('');
+            setDeliveryAddress('');
         } catch (err) {
             setPayErr(err.response?.data?.message || 'Payment failed. Please try again.');
         } finally {
@@ -93,7 +105,6 @@ const Cart = () => {
     return (
         <div className="cart-page">
             <div className="cart-inner">
-
                 <div className="cart-header">
                     <h1>My Cart</h1>
                     <span className="cart-header-count">{cartItems.length} item{cartItems.length !== 1 ? 's' : ''}</span>
@@ -106,25 +117,18 @@ const Cart = () => {
                         <FiShoppingCart size={48} />
                         <h3>Your cart is empty</h3>
                         <p>Browse our products and add something you like</p>
-                        <button className="btn btn-ice" onClick={() => navigate('/')}>
-                            Browse Products
-                        </button>
+                        <button className="btn btn-ice" onClick={() => navigate('/')}>Browse Products</button>
                     </div>
                 )}
 
                 {!cartLoading && cartItems.length > 0 && (
                     <div className="cart-layout">
-
-                        {/* ── CART ITEMS ── */}
                         <div className="cart-items">
                             {cartItems.map(item => {
                                 const finalPrice = getFinalPrice(item);
                                 const hasDiscount = Number(item.discount_percent) > 0;
-
                                 return (
                                     <div key={item.cart_id} className="cart-item">
-
-                                        {/* Image */}
                                         <div
                                             className="cart-item-img"
                                             onClick={() => navigate(`/product/${item.product_id}`)}
@@ -135,8 +139,6 @@ const Cart = () => {
                                                 onError={(e) => { e.target.src = '/placeholder.png'; }}
                                             />
                                         </div>
-
-                                        {/* Info */}
                                         <div className="cart-item-info">
                                             <h3
                                                 className="cart-item-name"
@@ -144,8 +146,6 @@ const Cart = () => {
                                             >
                                                 {item.product_name}
                                             </h3>
-
-                                            {/* Price — show strikethrough if discounted */}
                                             <div className="cart-item-price">
                                                 KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
                                                 {hasDiscount && (
@@ -159,8 +159,6 @@ const Cart = () => {
                                                     </>
                                                 )}
                                             </div>
-
-                                            {/* ── QTY CONTROLS ── */}
                                             <div className="cart-qty-row">
                                                 <div className="cart-qty-controls">
                                                     <button
@@ -174,14 +172,9 @@ const Cart = () => {
                                                             : <FiMinus size={13} />
                                                         }
                                                     </button>
-
                                                     <span className="qty-value">
-                                                        {busyId === item.cart_id
-                                                            ? <Loader small />
-                                                            : item.quantity
-                                                        }
+                                                        {busyId === item.cart_id ? <Loader small /> : item.quantity}
                                                     </span>
-
                                                     <button
                                                         className="qty-btn"
                                                         onClick={() => handleIncrease(item.product_id, item.cart_id)}
@@ -191,14 +184,11 @@ const Cart = () => {
                                                         <FiPlus size={13} />
                                                     </button>
                                                 </div>
-
                                                 <span className="qty-subtotal">
                                                     KES {(finalPrice * item.quantity).toLocaleString('en-KE', { maximumFractionDigits: 0 })}
                                                 </span>
                                             </div>
                                         </div>
-
-                                        {/* Remove */}
                                         <button
                                             className="cart-item-remove"
                                             onClick={() => handleRemove(item.cart_id)}
@@ -207,17 +197,14 @@ const Cart = () => {
                                         >
                                             <FiTrash2 size={16} />
                                         </button>
-
                                     </div>
                                 );
                             })}
                         </div>
 
-                        {/* ── ORDER SUMMARY ── */}
                         <div className="cart-summary">
                             <div className="summary-card">
                                 <h3 className="summary-title">Order Summary</h3>
-
                                 <div className="summary-rows">
                                     {cartItems.map(item => (
                                         <div key={item.cart_id} className="summary-row">
@@ -228,9 +215,7 @@ const Cart = () => {
                                         </div>
                                     ))}
                                 </div>
-
                                 <div className="summary-divider" />
-
                                 <div className="summary-total">
                                     <span>Total</span>
                                     <span className="summary-total-amount">
@@ -243,13 +228,24 @@ const Cart = () => {
 
                                 <form onSubmit={handleCheckout} style={{ marginTop: '20px' }}>
                                     <div className="form-group">
-                                        <label className="form-label">M-Pesa Phone Number</label>
+                                        <label className="form-label">M‑Pesa Phone Number</label>
                                         <input
                                             type="tel"
                                             className="form-control"
                                             placeholder="2547XXXXXXXX"
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Delivery Address</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="e.g. Nairobi CBD, Moi Avenue"
+                                            value={deliveryAddress}
+                                            onChange={(e) => setDeliveryAddress(e.target.value)}
                                             required
                                         />
                                     </div>
@@ -261,13 +257,12 @@ const Cart = () => {
                                     >
                                         {paying
                                             ? <Loader small />
-                                            : `Pay KES ${Number(cartTotal).toLocaleString('en-KE', { maximumFractionDigits: 0 })} via M-Pesa`
+                                            : `Pay KES ${Number(cartTotal).toLocaleString('en-KE', { maximumFractionDigits: 0 })} via M‑Pesa`
                                         }
                                     </button>
                                 </form>
                             </div>
                         </div>
-
                     </div>
                 )}
             </div>

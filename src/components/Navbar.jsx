@@ -3,24 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
     FiShoppingCart, FiHeart, FiUser, FiMenu, FiX,
     FiSun, FiMoon, FiLogOut, FiSettings, FiPackage,
-    FiShield, FiShoppingBag, FiBarChart2
+    FiShield, FiAlertCircle, FiShoppingBag, FiBarChart2
 } from 'react-icons/fi';
-import { useAuth }  from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useCart }  from '../context/CartContext';
+import { useCart } from '../context/CartContext';
 import '../css/Navbar.css';
 
 const Navbar = () => {
-    const { user, logout }        = useAuth();
+    const { user, logout } = useAuth();
     const { isDark, toggleTheme } = useTheme();
-    const { cartCount }           = useCart();
-    const navigate                = useNavigate();
+    const { cartCount } = useCart();
+    const navigate = useNavigate();
 
-    const [menuOpen,    setMenuOpen]    = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
 
     const isSeller = user?.role === 'seller';
-    const isAdmin  = user?.role === 'admin';
+    const isAdmin = user?.role === 'admin';
 
     const handleLogout = () => {
         logout();
@@ -121,6 +121,13 @@ const Navbar = () => {
                                         >
                                             <FiPackage size={14} /> My Orders
                                         </Link>
+                                        <Link
+                                            to="/complaints"
+                                            className="profile-dropdown-item"
+                                            onClick={() => setProfileOpen(false)}
+                                        >
+                                            <FiAlertCircle size={14} /> My Complaints
+                                        </Link>
 
                                         {/* Seller links */}
                                         {(isSeller || isAdmin) && (
@@ -201,28 +208,28 @@ const Navbar = () => {
             {/* ── MOBILE MENU ── */}
             {menuOpen && (
                 <div className="mobile-menu">
-                    <Link to="/"                               onClick={() => setMenuOpen(false)}>Shop</Link>
+                    <Link to="/" onClick={() => setMenuOpen(false)}>Shop</Link>
                     <Link to="/?category=Physical+Instrument" onClick={() => setMenuOpen(false)}>Instruments</Link>
-                    <Link to="/?category=VST+Plugin"          onClick={() => setMenuOpen(false)}>Plugins</Link>
-                    <Link to="/?category=Accessory"           onClick={() => setMenuOpen(false)}>Accessories</Link>
-                    <Link to="/stores"                        onClick={() => setMenuOpen(false)}>Stores</Link>
+                    <Link to="/?category=VST+Plugin" onClick={() => setMenuOpen(false)}>Plugins</Link>
+                    <Link to="/?category=Accessory" onClick={() => setMenuOpen(false)}>Accessories</Link>
+                    <Link to="/stores" onClick={() => setMenuOpen(false)}>Stores</Link>
 
                     {user ? (
                         <>
                             <div className="mobile-menu-divider" />
                             <Link to="/favourites" onClick={() => setMenuOpen(false)}>Favourites</Link>
-                            <Link to="/cart"       onClick={() => setMenuOpen(false)}>
+                            <Link to="/cart" onClick={() => setMenuOpen(false)}>
                                 Cart {cartCount > 0 && `(${cartCount})`}
                             </Link>
-                            <Link to="/orders"     onClick={() => setMenuOpen(false)}>My Orders</Link>
-                            <Link to="/profile"    onClick={() => setMenuOpen(false)}>My Profile</Link>
+                            <Link to="/orders" onClick={() => setMenuOpen(false)}>My Orders</Link>
+                            <Link to="/profile" onClick={() => setMenuOpen(false)}>My Profile</Link>
 
                             {(isSeller || isAdmin) && (
                                 <>
                                     <div className="mobile-menu-divider" />
                                     <Link to="/seller/dashboard" onClick={() => setMenuOpen(false)}>Seller Dashboard</Link>
-                                    <Link to="/seller/products"  onClick={() => setMenuOpen(false)}>My Products</Link>
-                                    <Link to="/add-product"      onClick={() => setMenuOpen(false)}>Add Product</Link>
+                                    <Link to="/seller/products" onClick={() => setMenuOpen(false)}>My Products</Link>
+                                    <Link to="/add-product" onClick={() => setMenuOpen(false)}>Add Product</Link>
                                 </>
                             )}
 

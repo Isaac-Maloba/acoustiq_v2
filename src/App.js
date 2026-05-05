@@ -22,6 +22,7 @@ import Favourites from './pages/Favourites';
 import Profile from './pages/Profile';
 import AboutUs from './pages/AboutUs';
 import Contact from './pages/Contact';
+import Complaints from './pages/Complaints';
 import ReturnsPolicy from './pages/ReturnsPolicy';
 import ShippingInfo from './pages/ShippingInfo';
 import NotFound from './pages/NotFound';
@@ -115,6 +116,7 @@ const App = () => {
                                 <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
                                 <Route path="/favourites" element={<ProtectedRoute><Favourites /></ProtectedRoute>} />
                                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                                <Route path="/complaints" element={<ProtectedRoute><Complaints /></ProtectedRoute>} />
                                 <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
 
                                 {/* ── SELLER APPLY (any logged-in user) ── */}
