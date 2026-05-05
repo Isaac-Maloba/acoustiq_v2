@@ -1,6 +1,7 @@
+// src/pages/EditProduct.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiUpload, FiSave, FiTrash2 } from 'react-icons/fi';
+import { FiUpload, FiSave, FiTrash2, FiX } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { apiGetProduct, apiEditProduct, apiDeleteProduct } from '../utils/api';
 import Loader from '../components/Loader';
@@ -49,6 +50,54 @@ const CONDITIONS = ['New', 'Used - Excellent', 'Used - Good', 'Used - Fair'];
 const FORMATS    = ['N/A', 'VST2', 'VST3', 'AU', 'AAX', 'Standalone'];
 
 // ============================================================
+//  IMAGE COMPRESSOR (same as AddProduct)
+// ============================================================
+const compressImage = (file) =>
+    new Promise((resolve, reject) => {
+        const TARGET_SIZE = 1.5 * 1024 * 1024; // 1.5 MB
+
+        // If file is already small, keep original
+        if (file.size <= TARGET_SIZE) {
+            resolve(file);
+            return;
+        }
+
+        const MAX_WIDTH  = 1600;
+        const MAX_HEIGHT = 1600;
+        const QUALITY    = 0.8;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                let { width, height } = img;
+                if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+                    const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+                    width  = Math.round(width  * ratio);
+                    height = Math.round(height * ratio);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width  = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) { reject(new Error('Compression failed')); return; }
+                        const safeName = file.name.replace(/\.[^.]+$/, '') + '_compressed.jpg';
+                        resolve(new File([blob], safeName, { type: 'image/jpeg' }));
+                    },
+                    'image/jpeg',
+                    QUALITY
+                );
+            };
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+
+// ============================================================
 //  EDIT PRODUCT
 // ============================================================
 const EditProduct = () => {
@@ -68,10 +117,13 @@ const EditProduct = () => {
     const [condition,      setCondition]      = useState('');
     const [format,         setFormat]         = useState('N/A');
     const [featured,       setFeatured]       = useState(false);
+    const [stockQuantity,  setStockQuantity]  = useState('1');       // NEW
+    const [discountPercent,setDiscountPercent]= useState('0');       // NEW
 
     // ── PHOTO STATE ──
     const [newMainPhoto,  setNewMainPhoto]  = useState(null);
     const [mainPreview,   setMainPreview]   = useState('');
+    const [compressing,   setCompressing]   = useState(false);
 
     // ── UI STATE ──
     const [loading,  setLoading]  = useState(false);
@@ -107,6 +159,8 @@ const EditProduct = () => {
                 setCondition(p.condition_status        || '');
                 setFormat(p.format                    || 'N/A');
                 setFeatured(p.featured === 1);
+                setStockQuantity(String(p.stock_quantity ?? 1));    // NEW
+                setDiscountPercent(String(p.discount_percent ?? 0)); // NEW
                 setMainPreview(
                     `https://maloba.alwaysdata.net/static/images/${p.product_photo}`
                 );
@@ -120,12 +174,35 @@ const EditProduct = () => {
         fetchProduct();
     }, [product_id, user]);
 
-    // ── NEW MAIN PHOTO HANDLER ──
-    const handleMainPhoto = (e) => {
+    // ── NEW MAIN PHOTO HANDLER (with compression) ──
+    const handleMainPhoto = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        setNewMainPhoto(file);
+
+        // Show original preview immediately
         setMainPreview(URL.createObjectURL(file));
+        setCompressing(true);
+
+        try {
+            const processed = await compressImage(file);
+            setNewMainPhoto(processed);
+            setMainPreview(URL.createObjectURL(processed));
+        } catch (err) {
+            console.error('Compression error:', err);
+            // Fallback to original
+            setNewMainPhoto(file);
+            setMainPreview(URL.createObjectURL(file));
+        } finally {
+            setCompressing(false);
+        }
+    };
+
+    const handleClearPhoto = (e) => {
+        e.stopPropagation();
+        setNewMainPhoto(null);
+        setMainPreview('');
+        const input = document.getElementById('edit-main-photo');
+        if (input) input.value = '';
     };
 
     // ── SUBMIT EDIT ──
@@ -151,6 +228,8 @@ const EditProduct = () => {
             formData.append('condition_status',    condition);
             formData.append('format',              format);
             formData.append('featured',            featured ? 1 : 0);
+            formData.append('stock_quantity',      stockQuantity || 1);       // NEW
+            formData.append('discount_percent',    discountPercent || 0);     // NEW
 
             if (newMainPhoto) formData.append('product_photo', newMainPhoto);
 
@@ -208,15 +287,27 @@ const EditProduct = () => {
                                 <h3 className="form-section-title">Main Photo</h3>
                                 <div
                                     className={`photo-upload-box ${mainPreview ? 'has-preview' : ''}`}
-                                    onClick={() => document.getElementById('edit-main-photo').click()}
+                                    onClick={() => !compressing && document.getElementById('edit-main-photo').click()}
+                                    style={{ cursor: compressing ? 'wait' : 'pointer' }}
                                 >
                                     {mainPreview ? (
-                                        <img src={mainPreview} alt="Main preview" className="photo-preview" />
+                                        <>
+                                            <img src={mainPreview} alt="Main preview" className="photo-preview" />
+                                            <button
+                                                type="button"
+                                                className="photo-clear-btn"
+                                                onClick={handleClearPhoto}
+                                                title="Remove photo"
+                                            >
+                                                <FiX size={14} />
+                                            </button>
+                                        </>
                                     ) : (
                                         <div className="photo-upload-placeholder">
-                                            <FiUpload size={28} />
-                                            <p>Click to change photo</p>
-                                            <span>JPG, PNG, WEBP accepted</span>
+                                            {compressing
+                                                ? <><Loader small /><p>Processing…</p></>
+                                                : <><FiUpload size={28} /><p>Click to change photo</p><span>JPG, PNG, WEBP · auto-optimized</span></>
+                                            }
                                         </div>
                                     )}
                                 </div>
@@ -227,7 +318,7 @@ const EditProduct = () => {
                                     onChange={handleMainPhoto}
                                     style={{ display: 'none' }}
                                 />
-                                {mainPreview && (
+                                {mainPreview && !compressing && (
                                     <p style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '8px', textAlign: 'center' }}>
                                         Click the image to change it
                                     </p>
@@ -348,6 +439,34 @@ const EditProduct = () => {
                                         min="1"
                                         required
                                     />
+                                </div>
+
+                                {/* ══ NEW: Stock + Discount ══ */}
+                                <div className="form-row-2">
+                                    <div className="form-group">
+                                        <label className="form-label">Stock Quantity *</label>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            placeholder="e.g. 1 (set 999 for digital goods)"
+                                            value={stockQuantity}
+                                            onChange={(e) => setStockQuantity(e.target.value)}
+                                            min="1"
+                                            max="9999"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Discount (%)</label>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            placeholder="0 – 90"
+                                            value={discountPercent}
+                                            onChange={(e) => setDiscountPercent(e.target.value)}
+                                            min="0"
+                                            max="90"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -476,7 +595,7 @@ const EditProduct = () => {
                             type="submit"
                             className="btn btn-ice"
                             style={{ padding: '12px 32px' }}
-                            disabled={loading}
+                            disabled={loading || compressing}
                         >
                             {loading ? <Loader small /> : <><FiSave size={15} /> Save Changes</>}
                         </button>

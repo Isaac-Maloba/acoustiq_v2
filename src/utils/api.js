@@ -1,22 +1,12 @@
 import axios from 'axios';
 
-// ============================================================
-//  BASE URL
-// ============================================================
 const BASE_URL = "https://maloba.alwaysdata.net";
 
-// ============================================================
-//  IMAGE URL HELPER
-//  Usage: imgUrl("filename.jpg")
-// ============================================================
 export const imgUrl = (filename) => {
     return `${BASE_URL}/static/images/${filename}`;
 };
 
-
-// ============================================================
-//  AUTH
-// ============================================================
+// Auth
 export const apiSignup = (formData) =>
     axios.post(`${BASE_URL}/api/signup`, formData);
 
@@ -29,10 +19,7 @@ export const apiVerifyOtp = (formData) =>
 export const apiGoogleAuth = (formData) =>
     axios.post(`${BASE_URL}/api/auth/google`, formData);
 
-
-// ============================================================
-//  PROFILE
-// ============================================================
+// Profile
 export const apiUpdateProfile = (formData) =>
     axios.put(`${BASE_URL}/api/profile/update`, formData);
 
@@ -42,17 +29,13 @@ export const apiChangePassword = (formData) =>
 export const apiToggle2FA = (formData) =>
     axios.put(`${BASE_URL}/api/profile/toggle-2fa`, formData);
 
-// DELETE requires user_id in body — send via data param
 export const apiDeleteAccount = (userId) => {
     const formData = new FormData();
     formData.append('user_id', userId);
     return axios.delete(`${BASE_URL}/api/profile/delete/${userId}`, { data: formData });
 };
 
-
-// ============================================================
-//  PRODUCTS
-// ============================================================
+// Products
 export const apiGetProducts = (params = {}) =>
     axios.get(`${BASE_URL}/api/products`, { params });
 
@@ -71,12 +54,9 @@ export const apiDeleteProduct = (productId, userId) => {
     return axios.delete(`${BASE_URL}/api/delete_product/${productId}`, { data: formData });
 };
 
-
-// ============================================================
-//  CART
-// ============================================================
+// Cart
 export const apiGetCart = (userId) =>
-    axios.get(`${BASE_URL}/api/cart/${userId}`);
+    axios.get(`${BASE_URL}/api/cart/${userId}`, { params: { user_id: userId } });
 
 export const apiAddToCart = (formData) =>
     axios.post(`${BASE_URL}/api/cart/add`, formData);
@@ -99,35 +79,26 @@ export const apiClearCart = (userId) => {
     return axios.delete(`${BASE_URL}/api/cart/clear/${userId}`, { data: formData });
 };
 
-
-// ============================================================
-//  FAVOURITES
-// ============================================================
+// Favourites
 export const apiToggleFavourite = (formData) =>
     axios.post(`${BASE_URL}/api/favourites/toggle`, formData);
 
 export const apiGetFavourites = (userId) =>
-    axios.get(`${BASE_URL}/api/favourites/${userId}`);
+    axios.get(`${BASE_URL}/api/favourites/${userId}`, { params: { user_id: userId } });
 
-
-// ============================================================
-//  RATINGS
-// ============================================================
+// Ratings
 export const apiAddRating = (formData) =>
     axios.post(`${BASE_URL}/api/ratings/add`, formData);
 
 export const apiGetRatings = (productId) =>
     axios.get(`${BASE_URL}/api/ratings/${productId}`);
 
-
-// ============================================================
-//  PAYMENTS & ORDERS
-// ============================================================
+// Payments & Orders
 export const apiMpesaPayment = (formData) =>
     axios.post(`${BASE_URL}/api/mpesa_payment`, formData);
 
 export const apiGetOrders = (userId) =>
-    axios.get(`${BASE_URL}/api/orders/${userId}`);
+    axios.get(`${BASE_URL}/api/orders/${userId}`, { params: { user_id: userId } });
 
 export const apiGetOrder = (orderId, userId) =>
     axios.get(`${BASE_URL}/api/order/${orderId}`, { params: { user_id: userId } });
@@ -135,10 +106,7 @@ export const apiGetOrder = (orderId, userId) =>
 export const apiUpdateOrderStatus = (orderId, formData) =>
     axios.put(`${BASE_URL}/api/order/${orderId}/status`, formData);
 
-
-// ============================================================
-//  SELLER
-// ============================================================
+// Seller
 export const apiSellerApply = (formData) =>
     axios.post(`${BASE_URL}/api/seller/apply`, formData);
 
@@ -146,7 +114,7 @@ export const apiSellerApplicationStatus = (userId) =>
     axios.get(`${BASE_URL}/api/seller/application-status`, { params: { user_id: userId } });
 
 export const apiGetSellerStore = (userId) =>
-    axios.get(`${BASE_URL}/api/seller/store/${userId}`);
+    axios.get(`${BASE_URL}/api/seller/store/${userId}`, { params: { user_id: userId } });
 
 export const apiUpdateSellerStore = (formData) =>
     axios.put(`${BASE_URL}/api/seller/store`, formData);
@@ -155,7 +123,7 @@ export const apiSellerDashboard = (userId) =>
     axios.get(`${BASE_URL}/api/seller/dashboard`, { params: { user_id: userId } });
 
 export const apiSellerProducts = (userId) =>
-    axios.get(`${BASE_URL}/api/seller/products/${userId}`);
+    axios.get(`${BASE_URL}/api/seller/products/${userId}`, { params: { user_id: userId } });
 
 export const apiSellerOrders = (userId, status = '') =>
     axios.get(`${BASE_URL}/api/seller/orders`, {
@@ -168,30 +136,21 @@ export const apiSellerEarnings = (userId) =>
 export const apiSellerPayoutRequest = (formData) =>
     axios.post(`${BASE_URL}/api/seller/payout-request`, formData);
 
-
-// ============================================================
-//  PUBLIC STORES
-// ============================================================
+// Public Stores
 export const apiGetStores = (search = '') =>
     axios.get(`${BASE_URL}/api/stores`, { params: { ...(search && { search }) } });
 
 export const apiGetStore = (slug) =>
     axios.get(`${BASE_URL}/api/store/${slug}`);
 
-
-// ============================================================
-//  COMPLAINTS
-// ============================================================
+// Complaints
 export const apiCreateComplaint = (formData) =>
     axios.post(`${BASE_URL}/api/complaint/create`, formData);
 
 export const apiGetComplaints = (userId) =>
-    axios.get(`${BASE_URL}/api/complaints/${userId}`);
+    axios.get(`${BASE_URL}/api/complaints/${userId}`, { params: { user_id: userId } });
 
-
-// ============================================================
-//  ADMIN
-// ============================================================
+// Admin
 export const apiAdminStats = (userId) =>
     axios.get(`${BASE_URL}/api/admin/stats`, { params: { user_id: userId } });
 
