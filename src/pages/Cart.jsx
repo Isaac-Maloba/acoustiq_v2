@@ -9,18 +9,18 @@ import Loader from '../components/Loader';
 import '../css/Cart.css';
 
 const Cart = () => {
-    const { user }                                        = useAuth();
+    const { user } = useAuth();
     const { cartItems, cartTotal, cartLoading, getFinalPrice,
-            removeFromCart, decrementCartItem, fetchCart } = useCart();
-    const navigate                                        = useNavigate();
+        removeFromCart, decrementCartItem, fetchCart } = useCart();
+    const navigate = useNavigate();
 
-    const [phone,            setPhone]            = useState('');
-    const [deliveryAddress,  setDeliveryAddress]  = useState('');
-    const [paying,           setPaying]           = useState(false);
-    const [payMsg,           setPayMsg]           = useState('');
-    const [payErr,           setPayErr]           = useState('');
+    const [phone, setPhone] = useState('');
+    const [deliveryAddress, setDeliveryAddress] = useState('');
+    const [paying, setPaying] = useState(false);
+    const [payMsg, setPayMsg] = useState('');
+    const [payErr, setPayErr] = useState('');
 
-    const [busyId,           setBusyId]           = useState(null);
+    const [busyId, setBusyId] = useState(null);
 
     if (!user) {
         return (
@@ -38,7 +38,7 @@ const Cart = () => {
         setBusyId(cartId);
         try {
             const formData = new FormData();
-            formData.append('user_id',    user.user_id);
+            formData.append('user_id', user.user_id);
             formData.append('product_id', productId);
             await apiAddToCart(formData);
             await fetchCart();
@@ -87,10 +87,10 @@ const Cart = () => {
         setPayMsg('');
         try {
             const formData = new FormData();
-            formData.append('user_id',          user.user_id);
-            formData.append('phone',            phone.trim());
+            formData.append('user_id', user.user_id);
+            formData.append('phone', phone.trim());
             formData.append('delivery_address', deliveryAddress.trim());
-            formData.append('amount',           Math.round(cartTotal));
+            formData.append('amount', Math.round(cartTotal));
             await apiMpesaPayment(formData);
             setPayMsg('Payment initiated! Check your phone to complete the M-Pesa prompt. Your cart will clear once confirmed.');
             setPhone('');
@@ -147,16 +147,30 @@ const Cart = () => {
                                                 {item.product_name}
                                             </h3>
                                             <div className="cart-item-price">
-                                                KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
-                                                {hasDiscount && (
+                                                {hasDiscount ? (
                                                     <>
-                                                        <span className="cart-item-original-price">
+                                                        <span style={{
+                                                            color: 'var(--gold)',
+                                                            fontWeight: 'bold',
+                                                        }}>
+                                                            KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                        </span> <br />
+                                                        <span style={{
+                                                            color: 'var(--text-faint)',
+                                                            textDecoration: 'line-through',
+                                                            fontSize: '0.85em',
+                                                            marginRight: '8px',
+                                                            fontWeight: '400',
+                                                        }}>
                                                             KES {Number(item.product_cost).toLocaleString()}
                                                         </span>
-                                                        <span className="cart-item-discount-badge">
-                                                            -{item.discount_percent}%
-                                                        </span>
+                                                        
+                                                        <span className="cart-item-discount-badge">-{item.discount_percent}%</span>
                                                     </>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-primary)' }}>
+                                                        KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                    </span>
                                                 )}
                                             </div>
                                             <div className="cart-qty-row">
@@ -224,7 +238,7 @@ const Cart = () => {
                                 </div>
 
                                 {payMsg && <div className="alert alert-success" style={{ marginTop: '16px' }}>{payMsg}</div>}
-                                {payErr && <div className="alert alert-error"   style={{ marginTop: '16px' }}>{payErr}</div>}
+                                {payErr && <div className="alert alert-error" style={{ marginTop: '16px' }}>{payErr}</div>}
 
                                 <form onSubmit={handleCheckout} style={{ marginTop: '20px' }}>
                                     <div className="form-group">

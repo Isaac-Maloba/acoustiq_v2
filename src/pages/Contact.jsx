@@ -19,8 +19,8 @@ const Contact = () => {
         {
             icon:  <FiMail size={18} />,
             label: 'Email',
-            value: 'mail@acoustiq.co.ke',
-            href:  'mailto:mail@acoustiq.co.ke'
+            value: 'isaaccmaloba@gmail.com',
+            href:  'mailto:isaaccmaloba@gmail.com'
         },
         {
             icon:  <FiPhone size={18} />,

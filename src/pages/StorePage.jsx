@@ -11,9 +11,9 @@ import '../css/Store.css';
 const StarDisplay = ({ rating, count }) => {
   const stars = [];
   for (let i = 1; i <= 5; i++) {
-    if (rating >= i)           stars.push(<FaStar key={i}         className="star-filled" />);
+    if (rating >= i) stars.push(<FaStar key={i} className="star-filled" />);
     else if (rating >= i - 0.5) stars.push(<FaStarHalfAlt key={i} className="star-filled" />);
-    else                        stars.push(<FaRegStar key={i}      className="star-empty" />);
+    else stars.push(<FaRegStar key={i} className="star-empty" />);
   }
   return (
     <div className="stars">
@@ -35,10 +35,10 @@ const StorePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [store, setStore]           = useState(null);
-  const [products, setProducts]     = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState('');
+  const [store, setStore] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [favouriteIds, setFavouriteIds] = useState([]);
 
   useEffect(() => {
@@ -69,7 +69,7 @@ const StorePage = () => {
     if (!user || !user.user_id) return;
     apiGetFavourites(user.user_id)
       .then(res => setFavouriteIds(res.data.map(f => f.product_id)))
-      .catch(() => {});
+      .catch(() => { });
   }, [user]);
 
   const handleToggleFavourite = async (e, productId) => {
@@ -85,7 +85,7 @@ const StorePage = () => {
       } else {
         setFavouriteIds(prev => prev.filter(id => id !== productId));
       }
-    } catch {}
+    } catch { }
   };
 
   if (loading) return <div className="page-wrapper"><div className="loader-wrapper"><Loader /></div></div>;
@@ -102,7 +102,7 @@ const StorePage = () => {
   if (!store) return null;
 
   const isSuspended = store.status === 'suspended';
-  const initial     = store.store_name?.charAt(0).toUpperCase();
+  const initial = store.store_name?.charAt(0).toUpperCase();
 
   return (
     <div className="page-wrapper store-page">
@@ -221,13 +221,27 @@ const StorePage = () => {
                   <div className="product-card-price">
                     {final ? (
                       <>
-                        <span style={{ color: 'var(--text-faint)', textDecoration: 'line-through', fontSize: '12px', marginRight: 6 }}>
+                        <span style={{
+                          color: 'var(--gold)',
+                          fontWeight: 'bold',
+                        }}>
+                          {formatAmount(final)}
+                        </span> <br />
+                        <span style={{
+                          color: 'var(--text-faint)',
+                          textDecoration: 'line-through',
+                          fontSize: '0.85em',
+                          marginRight: '8px',
+                          fontWeight: '400',
+                        }}>
                           {formatAmount(product.product_cost)}
                         </span>
-                        <span style={{ color: 'var(--ice)' }}>{formatAmount(final)}</span>
+                        
                       </>
                     ) : (
-                      formatAmount(product.product_cost)
+                      <span style={{ color: 'var(--text-primary)' }}>
+                        {formatAmount(product.product_cost)}
+                      </span>
                     )}
                   </div>
                 </div>

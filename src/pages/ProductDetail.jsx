@@ -67,35 +67,35 @@ const StarPicker = ({ value, onChange }) => {
 // ============================================================
 const ProductDetail = () => {
     const { product_id } = useParams();
-    const { user }       = useAuth();
-    const { addToCart }  = useCart();
-    const navigate       = useNavigate();
+    const { user } = useAuth();
+    const { addToCart } = useCart();
+    const navigate = useNavigate();
 
     const isAdmin = user?.role === 'admin';
 
     // ── PRODUCT STATE ──
-    const [product,     setProduct]     = useState(null);
-    const [allImages,   setAllImages]   = useState([]);
-    const [activeImg,   setActiveImg]   = useState('');
-    const [related,     setRelated]     = useState([]);
-    const [loading,     setLoading]     = useState(false);
-    const [error,       setError]       = useState('');
+    const [product, setProduct] = useState(null);
+    const [allImages, setAllImages] = useState([]);
+    const [activeImg, setActiveImg] = useState('');
+    const [related, setRelated] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     // ── FAVOURITE STATE ──
-    const [isFav,       setIsFav]       = useState(false);
+    const [isFav, setIsFav] = useState(false);
 
     // ── CART STATE ──
-    const [cartMsg,     setCartMsg]     = useState('');
-    const [cartAdding,  setCartAdding]  = useState(false);
+    const [cartMsg, setCartMsg] = useState('');
+    const [cartAdding, setCartAdding] = useState(false);
 
     // ── RATINGS STATE ──
-    const [ratings,     setRatings]     = useState([]);
+    const [ratings, setRatings] = useState([]);
     const [ratingsLoad, setRatingsLoad] = useState(false);
-    const [myStars,     setMyStars]     = useState(0);
-    const [myComment,   setMyComment]   = useState('');
-    const [ratingMsg,   setRatingMsg]   = useState('');
-    const [ratingErr,   setRatingErr]   = useState('');
-    const [submitting,  setSubmitting]  = useState(false);
+    const [myStars, setMyStars] = useState(0);
+    const [myComment, setMyComment] = useState('');
+    const [ratingMsg, setRatingMsg] = useState('');
+    const [ratingErr, setRatingErr] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     // ── FETCH PRODUCT ──
     useEffect(() => {
@@ -114,7 +114,7 @@ const ProductDetail = () => {
             setLoading(true);
             setError('');
             const response = await apiGetProduct(product_id);
-            const data     = response.data;
+            const data = response.data;
             setProduct(data);
             setRelated(data.related || []);
 
@@ -144,7 +144,7 @@ const ProductDetail = () => {
     const fetchFavouriteStatus = async () => {
         try {
             const response = await apiGetFavourites(user.user_id);
-            const ids      = response.data.map(f => f.product_id);
+            const ids = response.data.map(f => f.product_id);
             setIsFav(ids.includes(parseInt(product_id)));
         } catch (err) {
             console.error('Failed to fetch favourite status:', err);
@@ -170,7 +170,7 @@ const ProductDetail = () => {
         if (!user) { navigate('/signin'); return; }
         try {
             const formData = new FormData();
-            formData.append('user_id',    user.user_id);
+            formData.append('user_id', user.user_id);
             formData.append('product_id', product_id);
             const response = await apiToggleFavourite(formData);
             setIsFav(response.data.status === 'added');
@@ -182,7 +182,7 @@ const ProductDetail = () => {
     // ── SUBMIT RATING ──
     const handleSubmitRating = async (e) => {
         e.preventDefault();
-        if (!user)        { navigate('/signin'); return; }
+        if (!user) { navigate('/signin'); return; }
         if (myStars === 0) { setRatingErr('Please select a star rating.'); return; }
 
         setSubmitting(true);
@@ -191,10 +191,10 @@ const ProductDetail = () => {
 
         try {
             const formData = new FormData();
-            formData.append('user_id',    user.user_id);
+            formData.append('user_id', user.user_id);
             formData.append('product_id', product_id);
-            formData.append('stars',      myStars);
-            formData.append('comment',    myComment);
+            formData.append('stars', myStars);
+            formData.append('comment', myComment);
 
             await apiAddRating(formData);
             setRatingMsg('Rating submitted successfully!');
@@ -215,18 +215,18 @@ const ProductDetail = () => {
 
     // ── LOADING / ERROR STATES ──
     if (loading) return <div className="loader-wrapper"><Loader /></div>;
-    if (error)   return <div className="page-wrapper"><div className="alert alert-error">{error}</div></div>;
+    if (error) return <div className="page-wrapper"><div className="alert alert-error">{error}</div></div>;
     if (!product) return null;
 
     // ── PRICE CALCULATION ──
-    const discount   = Number(product.discount_percent) || 0;
+    const discount = Number(product.discount_percent) || 0;
     const finalPrice = Number(product.product_cost) * (1 - discount / 100);
     const hasDiscount = discount > 0;
 
     // ── STOCK STATUS ──
-    const stock       = Number(product.stock_quantity);
-    const outOfStock  = stock === 0;
-    const lowStock    = stock > 0 && stock <= 5;
+    const stock = Number(product.stock_quantity);
+    const outOfStock = stock === 0;
+    const lowStock = stock > 0 && stock <= 5;
 
     // ── CAN EDIT: owner or admin ──
     const canEdit = user && (user.user_id === product.added_by || isAdmin);
@@ -316,17 +316,31 @@ const ProductDetail = () => {
 
                         {/* Price */}
                         <div className="product-price">
-                            KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
-                            {hasDiscount && (
-                                <span className="product-original-price">
-                                    KES {Number(product.product_cost).toLocaleString()}
+                            {hasDiscount ? (
+                                <>
+                                    <span style={{
+                                        color: 'var(--gold)',
+                                        fontWeight: 'bold',
+                                    }}>
+                                        KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                    </span> <br />
+                                    <span style={{
+                                        color: 'var(--text-faint)',
+                                        textDecoration: 'line-through',
+                                        fontSize: '0.85em',
+                                        marginRight: '8px',
+                                        fontWeight: '400',
+                                    }}>
+                                        KES {Number(product.product_cost).toLocaleString()}
+                                    </span>
+                                    
+                                </>
+                            ) : (
+                                <span style={{ color: 'var(--text-primary)' }}>
+                                    KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
                                 </span>
                             )}
-                            {hasDiscount && (
-                                <span className="badge badge-error" style={{ fontSize: '11px', marginLeft: '8px' }}>
-                                    -{discount}% OFF
-                                </span>
-                            )}
+                            {/* discount badge still here */}
                         </div>
 
                         {/* Stock status */}
@@ -349,12 +363,12 @@ const ProductDetail = () => {
                         {/* Specs */}
                         <div className="product-specs">
                             {[
-                                { label: 'Brand',     value: product.brand },
-                                { label: 'Type',      value: product.instrument_type },
-                                { label: 'Genre',     value: product.genre },
-                                { label: 'Level',     value: product.level },
+                                { label: 'Brand', value: product.brand },
+                                { label: 'Type', value: product.instrument_type },
+                                { label: 'Genre', value: product.genre },
+                                { label: 'Level', value: product.level },
                                 { label: 'Condition', value: product.condition_status },
-                                { label: 'Format',    value: product.format !== 'N/A' ? product.format : null },
+                                { label: 'Format', value: product.format !== 'N/A' ? product.format : null },
                             ].filter(s => s.value).map(spec => (
                                 <div key={spec.label} className="spec-row">
                                     <span className="spec-label">{spec.label}</span>
@@ -482,7 +496,7 @@ const ProductDetail = () => {
                         <h2 className="related-title">Related Products</h2>
                         <div className="related-grid">
                             {related.map(item => {
-                                const relDiscount   = Number(item.discount_percent) || 0;
+                                const relDiscount = Number(item.discount_percent) || 0;
                                 const relFinalPrice = Number(item.product_cost) * (1 - relDiscount / 100);
                                 return (
                                     <div

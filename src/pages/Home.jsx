@@ -1,3 +1,4 @@
+// src/pages/Home.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiHeart, FiSearch, FiChevronDown, FiX } from 'react-icons/fi';
@@ -217,7 +218,6 @@ const Home = () => {
     ];
 
     // ── HERO SECONDARY CTA ──
-    // Only sellers/admins see "Add a Product"; customers see "Sell on Acoustiq"; guests see "Join Acoustiq"
     const getHeroCta = () => {
         if (isSeller || isAdmin) return { label: 'Add a Product',    path: '/add-product' };
         if (user)                return { label: 'Sell on Acoustiq', path: '/seller/apply' };
@@ -397,7 +397,20 @@ const Home = () => {
                                         key={product.product_id}
                                         className="featured-card"
                                         onClick={() => navigate(`/product/${product.product_id}`)}
+                                        style={{ position: 'relative' }}
                                     >
+                                        {/* NEW: Discount badge (same style as Store page) */}
+                                        {hasDiscount && (
+                                            <span className="badge badge-error" style={{
+                                                position: 'absolute',
+                                                top: 10,
+                                                left: 10,
+                                                fontSize: '10px'
+                                            }}>
+                                                -{product.discount_percent}%
+                                            </span>
+                                        )}
+
                                         <div className="featured-card-img">
                                             <img src={imgUrl(product.product_photo)} alt={product.product_name} />
                                         </div>
@@ -409,10 +422,27 @@ const Home = () => {
                                             </p>
                                             <StarDisplay rating={product.avg_rating} count={product.rating_count} />
                                             <div className="featured-card-price">
-                                                KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
-                                                {hasDiscount && (
-                                                    <span className="product-card-original-price">
-                                                        KES {Number(product.product_cost).toLocaleString()}
+                                                {hasDiscount ? (
+                                                    <>
+                                                        <span style={{
+                                                            color: 'var(--text-faint)',
+                                                            textDecoration: 'line-through',
+                                                            fontSize: '0.85em',
+                                                            marginRight: '8px',
+                                                            fontWeight: '400',
+                                                        }}>
+                                                            KES {Number(product.product_cost).toLocaleString()}
+                                                        </span>
+                                                        <span style={{
+                                                            color: 'var(--ice)',
+                                                            fontWeight: 'bold',
+                                                        }}>
+                                                            KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-primary)' }}>
+                                                        KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
                                                     </span>
                                                 )}
                                             </div>
@@ -451,10 +481,16 @@ const Home = () => {
                                     key={product.product_id}
                                     className="product-card"
                                     onClick={() => navigate(`/product/${product.product_id}`)}
+                                    style={{ position: 'relative' }}
                                 >
-                                    {/* Discount badge */}
+                                    {/* FIXED: Discount badge — same style as Store page */}
                                     {hasDiscount && (
-                                        <span className="product-card-discount-badge">
+                                        <span className="badge badge-error" style={{
+                                            position: 'absolute',
+                                            top: 10,
+                                            left: 10,
+                                            fontSize: '10px'
+                                        }}>
                                             -{product.discount_percent}%
                                         </span>
                                     )}
@@ -483,10 +519,28 @@ const Home = () => {
                                         <h3 className="product-card-name">{product.product_name}</h3>
                                         <StarDisplay rating={product.avg_rating} count={product.rating_count} />
                                         <div className="product-card-price">
-                                            KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
-                                            {hasDiscount && (
-                                                <span className="product-card-original-price">
-                                                    KES {Number(product.product_cost).toLocaleString()}
+                                            {hasDiscount ? (
+                                                <>
+                                                    <span style={{
+                                                        color: 'var(--gold)',
+                                                        fontWeight: 'bold',
+                                                    }}>
+                                                        KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                    </span> <br />
+                                                    <span style={{
+                                                        color: 'var(--text-faint)',
+                                                        textDecoration: 'line-through',
+                                                        fontSize: '0.85em',
+                                                        marginRight: '8px',
+                                                        fontWeight: '400',
+                                                    }}>
+                                                        KES {Number(product.product_cost).toLocaleString()}
+                                                    </span>
+                                                    
+                                                </>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-primary)' }}>
+                                                    KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
                                                 </span>
                                             )}
                                         </div>

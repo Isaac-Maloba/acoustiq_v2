@@ -1,3 +1,4 @@
+// src/pages/Favourites.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiHeart, FiShoppingCart, FiTrash2 } from 'react-icons/fi';
@@ -32,8 +33,8 @@ const Favourites = () => {
     const [favourites, setFavourites] = useState([]);
     const [loading,    setLoading]    = useState(false);
     const [error,      setError]      = useState('');
-    const [removing,   setRemoving]   = useState(null); // product_id being removed
-    const [cartMsgs,   setCartMsgs]   = useState({});   // { product_id: 'message' }
+    const [removing,   setRemoving]   = useState(null);
+    const [cartMsgs,   setCartMsgs]   = useState({});
 
     useEffect(() => {
         if (!user) { navigate('/signin'); return; }
@@ -78,7 +79,12 @@ const Favourites = () => {
         }, 2500);
     };
 
-    // ── NOT SIGNED IN ──
+    // ── FINAL PRICE HELPER ──
+    const getFinalPrice = (item) => {
+        const discount = Number(item.discount_percent) || 0;
+        return Number(item.product_cost) * (1 - discount / 100);
+    };
+
     if (!user) return null;
 
     return (
@@ -120,64 +126,106 @@ const Favourites = () => {
             {/* ── FAVOURITES GRID ── */}
             {!loading && !error && favourites.length > 0 && (
                 <div className="favs-grid">
-                    {favourites.map(item => (
-                        <div
-                            key={item.fav_id}
-                            className="fav-card"
-                            onClick={() => navigate(`/product/${item.product_id}`)}
-                        >
-                            {/* Remove button */}
-                            <button
-                                className="fav-remove-btn"
-                                onClick={(e) => { e.stopPropagation(); handleRemove(item.product_id); }}
-                                disabled={removing === item.product_id}
-                                title="Remove from favourites"
+                    {favourites.map(item => {
+                        const finalPrice = getFinalPrice(item);
+                        const hasDiscount = Number(item.discount_percent) > 0;
+
+                        return (
+                            <div
+                                key={item.fav_id}
+                                className="fav-card"
+                                onClick={() => navigate(`/product/${item.product_id}`)}
+                                style={{ position: 'relative' }}
                             >
-                                {removing === item.product_id
-                                    ? <Loader small />
-                                    : <FiTrash2 size={14} />
-                                }
-                            </button>
-
-                            {/* Image */}
-                            <div className="fav-card-img">
-                                <img
-                                    src={imgUrl(item.product_photo)}
-                                    alt={item.product_name}
-                                    onError={(e) => { e.target.src = '/placeholder.png'; }}
-                                />
-                            </div>
-
-                            {/* Info */}
-                            <div className="fav-card-body">
-                                <h3 className="fav-card-name">{item.product_name}</h3>
-
-                                {item.avg_rating > 0
-                                    ? <StarDisplay rating={item.avg_rating} />
-                                    : <span className="text-faint" style={{ fontSize: '12px' }}>No reviews yet</span>
-                                }
-
-                                <div className="fav-card-price">
-                                    KES {Number(item.product_cost).toLocaleString()}
-                                </div>
-
-                                {/* Cart feedback */}
-                                {cartMsgs[item.product_id] && (
-                                    <div className={`fav-cart-msg ${cartMsgs[item.product_id].includes('Failed') ? 'text-error' : 'text-success'}`}>
-                                        {cartMsgs[item.product_id]}
-                                    </div>
+                                {/* Discount badge */}
+                                {hasDiscount && (
+                                    <span className="badge badge-error" style={{
+                                        position: 'absolute',
+                                        top: 10,
+                                        left: 10,
+                                        fontSize: '10px',
+                                        zIndex: 2
+                                    }}>
+                                        -{item.discount_percent}%
+                                    </span>
                                 )}
 
-                                {/* Add to cart */}
+                                {/* Remove button */}
                                 <button
-                                    className="btn btn-ice fav-cart-btn"
-                                    onClick={(e) => handleAddToCart(e, item.product_id)}
+                                    className="fav-remove-btn"
+                                    onClick={(e) => { e.stopPropagation(); handleRemove(item.product_id); }}
+                                    disabled={removing === item.product_id}
+                                    title="Remove from favourites"
                                 >
-                                    <FiShoppingCart size={14} /> Add to Cart
+                                    {removing === item.product_id
+                                        ? <Loader small />
+                                        : <FiTrash2 size={14} />
+                                    }
                                 </button>
+
+                                {/* Image */}
+                                <div className="fav-card-img">
+                                    <img
+                                        src={imgUrl(item.product_photo)}
+                                        alt={item.product_name}
+                                        onError={(e) => { e.target.src = '/placeholder.png'; }}
+                                    />
+                                </div>
+
+                                {/* Info */}
+                                <div className="fav-card-body">
+                                    <h3 className="fav-card-name">{item.product_name}</h3>
+
+                                    {item.avg_rating > 0
+                                        ? <StarDisplay rating={item.avg_rating} />
+                                        : <span className="text-faint" style={{ fontSize: '12px' }}>No reviews yet</span>
+                                    }
+
+                                    <div className="fav-card-price">
+                                        {hasDiscount ? (
+                                            <>
+                                                <span style={{
+                                                    color: 'var(--gold)',
+                                                    fontWeight: 'bold',
+                                                }}>
+                                                    KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                </span> <br />
+                                                <span style={{
+                                                    color: 'var(--text-faint)',
+                                                    textDecoration: 'line-through',
+                                                    fontSize: '0.85em',
+                                                    marginRight: '8px',
+                                                    fontWeight: '400',
+                                                }}>
+                                                    KES {Number(item.product_cost).toLocaleString()}
+                                                </span>
+                                                
+                                            </>
+                                        ) : (
+                                            <span style={{ color: 'var(--text-primary)' }}>
+                                                KES {Number(item.product_cost).toLocaleString()}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Cart feedback */}
+                                    {cartMsgs[item.product_id] && (
+                                        <div className={`fav-cart-msg ${cartMsgs[item.product_id].includes('Failed') ? 'text-error' : 'text-success'}`}>
+                                            {cartMsgs[item.product_id]}
+                                        </div>
+                                    )}
+
+                                    {/* Add to cart */}
+                                    <button
+                                        className="btn btn-ice fav-cart-btn"
+                                        onClick={(e) => handleAddToCart(e, item.product_id)}
+                                    >
+                                        <FiShoppingCart size={14} /> Add to Cart
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

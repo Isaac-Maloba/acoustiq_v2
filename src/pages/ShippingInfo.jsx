@@ -74,12 +74,40 @@ const ShippingInfo = () => (
             <h2 className="info-section-heading">How it works</h2>
             <div className="shipping-steps">
                 {steps.map((step, i) => (
-                    <div key={i} className="shipping-step">
-                        <div className="shipping-step-icon">{step.icon}</div>
-                        <div className="shipping-step-connector" />
-                        <div className="shipping-step-body">
-                            <h4>{step.title}</h4>
-                            <p>{step.body}</p>
+                    <div
+                        key={i}
+                        className="shipping-step"
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'row',      /* ← force horizontal */
+                            alignItems: 'center',
+                            gap: '16px',
+                            marginBottom: '24px',
+                        }}
+                    >
+                        <div
+                            className="shipping-step-icon"
+                            style={{
+                                flexShrink: 0,
+                                width: '50px',
+                                height: '50px',
+                                borderRadius: '50%',
+                                background: 'var(--bg-surface2)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                border: '1px solid var(--border)',
+                            }}
+                        >
+                            {step.icon}
+                        </div>
+                        <div
+                            className="shipping-step-connector"
+                            style={{ display: 'none' }} /* hide if it forces vertical */
+                        />
+                        <div className="shipping-step-body" style={{ flex: 1, minWidth: 0 }}>
+                            <h4 style={{ margin: '0 0 4px', wordBreak: 'normal' }}>{step.title}</h4>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}>{step.body}</p>
                         </div>
                     </div>
                 ))}
@@ -120,7 +148,8 @@ const ShippingInfo = () => (
                     'Fragile items (e.g. violins, acoustic guitars) are shipped with extra protective packaging at no additional cost.',
                     'Large items such as drum kits, keyboards, and studio monitors may require additional handling time.',
                     'Acoustiq is not liable for delays caused by the courier once the item has been dispatched.',
-                    'If your item has not arrived within the estimated window, contact us at hello@acoustiq.co.ke and we will follow up with the courier.',
+                    // Updated email address
+                    'If your item has not arrived within the estimated window, contact us at isaaccmaloba@gmail.com and we will follow up with the courier.',
                 ].map((note, i) => (
                     <div key={i} className="shipping-note-item">
                         <FiAlertCircle size={14} className="shipping-note-icon" />
