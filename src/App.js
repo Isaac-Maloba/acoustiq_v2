@@ -26,6 +26,7 @@ import Complaints from './pages/Complaints';
 import ReturnsPolicy from './pages/ReturnsPolicy';
 import ShippingInfo from './pages/ShippingInfo';
 import NotFound from './pages/NotFound';
+import ChatBot from './components/ChatBot';
 
 // ── PAGES — new (Phase 3) ─────────────────────────────────
 import Orders from './pages/Orders';
@@ -146,6 +147,7 @@ const App = () => {
 
                             </Routes>
                         </Layout>
+                        <ChatBot />
                     </Router>
                 </CartProvider>
             </ThemeProvider>

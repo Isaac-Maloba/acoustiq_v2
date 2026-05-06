@@ -197,3 +197,11 @@ export const apiAdminGetComplaints = (userId, status = 'open') =>
 
 export const apiAdminResolveComplaint = (complaintId, formData) =>
     axios.put(`${BASE_URL}/api/admin/complaints/${complaintId}/resolve`, formData);
+
+export const sendChatMessage = (messages) => {
+    return fetch(`${BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages })
+    }).then(res => res.json());
+};
