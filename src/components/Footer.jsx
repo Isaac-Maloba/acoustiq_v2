@@ -5,10 +5,10 @@ import { FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
 import '../css/Footer.css';
 
 const Footer = () => {
-    // Shared text style for all footer content
+    // Shared text style — uses theme-aware variable so it works in both dark & light mode
     const textStyle = {
         fontFamily: "var(--font-head)",   // Syne
-        color: "#ffffff",
+        color: "var(--text-primary)",     // ← theme‑aware: light in dark mode, dark in light mode
         fontWeight: 700,
         fontSize: "15px",
         lineHeight: 1.6,
