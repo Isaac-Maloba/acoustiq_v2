@@ -425,6 +425,12 @@ const Home = () => {
                                                 {hasDiscount ? (
                                                     <>
                                                         <span style={{
+                                                            color: 'var(--gold)',
+                                                            fontWeight: 'bold',
+                                                        }}>
+                                                            KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                        </span> <br />
+                                                        <span style={{
                                                             color: 'var(--text-faint)',
                                                             textDecoration: 'line-through',
                                                             fontSize: '0.85em',
@@ -433,12 +439,7 @@ const Home = () => {
                                                         }}>
                                                             KES {Number(product.product_cost).toLocaleString()}
                                                         </span>
-                                                        <span style={{
-                                                            color: 'var(--ice)',
-                                                            fontWeight: 'bold',
-                                                        }}>
-                                                            KES {finalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
-                                                        </span>
+                                                        
                                                     </>
                                                 ) : (
                                                     <span style={{ color: 'var(--text-primary)' }}>
