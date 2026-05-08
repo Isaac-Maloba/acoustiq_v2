@@ -333,7 +333,7 @@ const ProductDetail = () => {
                                     }}>
                                         KES {Number(product.product_cost).toLocaleString()}
                                     </span>
-                                    
+
                                 </>
                             ) : (
                                 <span style={{ color: 'var(--text-primary)' }}>
@@ -515,10 +515,29 @@ const ProductDetail = () => {
                                             <h4 className="related-card-name">{item.product_name}</h4>
                                             <StarDisplay rating={item.avg_rating || 0} count={0} />
                                             <div className="related-card-price">
-                                                KES {relFinalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
-                                                {relDiscount > 0 && (
-                                                    <span className="product-card-original-price">
-                                                        KES {Number(item.product_cost).toLocaleString()}
+                                                {relDiscount > 0 ? (
+                                                    <>
+                                                        <span style={{
+                                                            color: 'var(--gold)',
+                                                            fontWeight: 'bold',
+                                                        }}>
+                                                            KES {relFinalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
+                                                        </span>
+                                                        <br />
+
+                                                        <span style={{
+                                                            color: 'var(--text-faint)',
+                                                            textDecoration: 'line-through',
+                                                            fontSize: '0.85em',
+                                                            marginRight: '8px',
+                                                            fontWeight: '400',
+                                                        }}>
+                                                            KES {Number(item.product_cost).toLocaleString()}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-primary)' }}>
+                                                        KES {relFinalPrice.toLocaleString('en-KE', { maximumFractionDigits: 0 })}
                                                     </span>
                                                 )}
                                             </div>
